@@ -1,3 +1,9 @@
+# PyCharm folder
+.idea
+
+#sys dir
+.directory
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
