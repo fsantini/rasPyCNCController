@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'RunWidget/runWidget.ui'
 #
-# Created: Sun Apr 10 09:55:38 2016
+# Created: Sun Apr 10 19:36:34 2016
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!

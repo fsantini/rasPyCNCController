@@ -45,6 +45,7 @@ class GCodeRunner(QThread):
         self.stopFlag = False
         self.pauseFlag = False
         self.currentLine = 0
+        self.waitForPause = False
 
     def setGrbl(self, grblWriter):
         self.grblWriter = grblWriter
@@ -53,10 +54,21 @@ class GCodeRunner(QThread):
         self.gcode = gcode
         self.currentLine = 0
 
-    def togglePause(self):
-        self.pauseFlag = not self.pauseFlag
-        # emit an event if pause is toggled
-        self.pause_event.emit(self.pauseFlag)
+    def resume(self):
+        if not self.pauseFlag:
+            return
+
+        self.pauseFlag = False
+        self.waitForPause = False
+        self.grblWriter.resume_pos()
+        self.pause_event.emit(False)
+
+    def pause(self):
+        if self.waitForPause or self.pauseFlag:
+            return
+
+        self.pauseFlag = True
+        self.waitForPause = True # this flag is on when pause was requested, but grbl hasn't cleared the queue yet
 
     def stop(self):
         self.stopFlag = True
@@ -82,6 +94,11 @@ class GCodeRunner(QThread):
 
             # check for pause is after check for ack, so we are sure that GRBL is in sync
             if (self.pauseFlag):
+                if self.waitForPause:
+                    self.waitForPause = False # now pause code is being processed
+                    # emit an event when the gcode has picked up with the pause
+                    self.grblWriter.store_pos()
+                    self.pause_event.emit(True)
                 # idle loop during pause
                 time.sleep(0.1)
                 continue

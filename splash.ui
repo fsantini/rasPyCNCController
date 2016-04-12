@@ -35,6 +35,28 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
+  <widget class="QPushButton" name="AbortButton">
+   <property name="geometry">
+    <rect>
+     <x>154</x>
+     <y>189</y>
+     <width>181</width>
+     <height>71</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>FreeSans</family>
+     <pointsize>27</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+     <kerning>true</kerning>
+    </font>
+   </property>
+   <property name="text">
+    <string>Abort</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

@@ -27,6 +27,11 @@ BTN_SELECT=0
 BTN_OK=8
 BTN_CANCEL=9
 
+# JoyJogThread
+BTN_ZERO=0
+BTN_ZEROZ=1
+BTN_HOME=2
+
 # JoyStatus
 # Mapping of joystick buttons and axes to movements.
 

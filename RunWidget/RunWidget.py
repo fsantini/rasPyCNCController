@@ -48,6 +48,7 @@ class RunWidget(Ui_runWidget, QWidget):
     error_event = Signal(object)
     stop_event = Signal()
     end_event = Signal()
+    pause_event = Signal(object)
 
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
@@ -58,8 +59,8 @@ class RunWidget(Ui_runWidget, QWidget):
         self.runner = None
         self.file = ""
         self.joy = RunJoyEventGenerator()
-        self.PauseButton.clicked.connect(self.togglePause)
-        self.joy.event_pause.connect(self.togglePause)
+        self.PauseButton.clicked.connect(self.pause)
+        self.joy.event_pause.connect(self.pause)
         self.initElements()
 
 
@@ -119,8 +120,10 @@ class RunWidget(Ui_runWidget, QWidget):
         self.runner.error_event.connect(lambda err: self.error_event.emit(err))
         self.runner.end_event.connect(lambda : self.end_event.emit() )
         self.runner.stop_event.connect(lambda : self.stop_event.emit())
+        self.runner.pause_event.connect(lambda pauseFlag: self.pause_event.emit(pauseFlag))
 
         self.runner.error_event.connect(lambda err: self.stopJoy())
+        self.runner.pause_event.connect(lambda pauseFlag: self.stopJoy() if pauseFlag else None) # stop the joy on pause
         self.runner.end_event.connect(lambda : self.stopJoy())
         self.runner.stop_event.connect(lambda : self.stopJoy())
 
@@ -130,14 +133,24 @@ class RunWidget(Ui_runWidget, QWidget):
     def resetGrbl(self):
         self.runner.stop()
 
-    def togglePause(self):
-        if self.isPaused:
-            self.PauseButton.setText("Pause")
-        else:
-            self.PauseButton.setText("Resume")
+    def resume(self):
+        self.isPaused = False
+        self.PauseButton.setEnabled(True)
+        # self.startJoy() # this called from the container?
+        self.runner.resume()
 
-        self.isPaused = not self.isPaused
-        self.runner.togglePause()
+    def cancelPause(self):
+        self.runner.stop()
+        self.resume()
+
+    def pause(self):
+        # we are already paused: do nothing
+        if self.isPaused:
+            return
+
+        self.PauseButton.setEnabled(False)
+        self.isPaused = True
+        self.runner.pause()
 
     def setTime(self, timeSec):
         timeStr = self.formatTime(timeSec)

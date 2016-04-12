@@ -36,7 +36,6 @@ def waitForJoy():
     while (pygame.joystick.get_count() == 0):
         pygame.quit()
         QApplication.processEvents()
-        time.sleep(0.5)
         pygame.init()
         pygame.joystick.init()
 
@@ -58,6 +57,7 @@ class MainWindow(QStackedWidget):
         self.splash = SplashWidget(self)
         self.addWidget(self.splash)
         self.setCurrentWidget(self.splash)
+        self.splash.AbortButton.clicked.connect(self.destroy)
         self.splash.setText("Waiting for joystick...")
         QApplication.processEvents()
 
@@ -73,7 +73,7 @@ class MainWindow(QStackedWidget):
 
         # here wait for GRBL and show splash screen
         while not self.grblWriter.open():
-            time.sleep(0.5)
+            QApplication.processEvents()
 
         self.splash.setText("Initializing...")
         QApplication.processEvents()
@@ -101,8 +101,66 @@ class MainWindow(QStackedWidget):
         self.runWidget.end_event.connect(self.runEnd)
         self.runWidget.stop_event.connect(self.runEnd)
         self.runWidget.error_event.connect(self.grblError)
+        self.runWidget.pause_event.connect(self.doPause) # when this is called, the pause was already generated
 
         self.setCurrentWidget(self.jogWidget)
+        self.jogWidget.startJoy()
+
+    # changes the appearance of the jog widget to work during pause
+    def _reconfigureJogWidget(self, pauseFlag):
+        if pauseFlag:
+            # repurpose jogwidget buttons
+            try:
+                self.jogWidget.run_event.disconnect(self.runFile)
+            except:
+                print "Can't jogWidget.run_event.disconnect(self.runFile)"
+                pass
+
+            try:
+                self.jogWidget.load_event.disconnect(self.loadFile)
+            except:
+                print "Can't jogWidget.load_event.disconnect(self.loadFile)"
+                pass
+            self.jogWidget.RunButton.originalText = self.jogWidget.RunButton.text()
+            self.jogWidget.RunButton.setText("Cancel (9)")
+            self.jogWidget.LoadButton.originalText = self.jogWidget.LoadButton.text()
+            self.jogWidget.LoadButton.setText("Resume (10)")
+
+            self.jogWidget.run_event.connect(self.cancelPause)
+            self.jogWidget.load_event.connect(self.doResume)
+        else:
+            try:
+                self.jogWidget.run_event.disconnect(self.cancelPause)
+            except:
+                pass
+
+            try:
+                self.jogWidget.load_event.disconnect(self.doResume)
+            except:
+                pass
+
+            self.jogWidget.RunButton.setText(self.jogWidget.RunButton.originalText)
+            self.jogWidget.LoadButton.setText(self.jogWidget.LoadButton.originalText)
+            self.jogWidget.run_event.connect(self.runFile)
+            self.jogWidget.load_event.connect(self.loadFile)
+
+    # don't need to generate the pause, this is called when the system is already paused
+    def doPause(self, pauseFlag):
+        if not pauseFlag:
+            return
+        self._reconfigureJogWidget(True)
+        self.setCurrentWidget(self.jogWidget)
+        self.jogWidget.startJoy()
+
+    def doResume(self):
+        self._reconfigureJogWidget(False)
+        self.setCurrentWidget(self.runWidget)
+        self.runWidget.resume()
+        self.runWidget.startJoy()
+
+    def cancelPause(self):
+        self.runWidget.cancelPause()
+        self._reconfigureJogWidget(False)
         self.jogWidget.startJoy()
 
     def exitRequest(self):

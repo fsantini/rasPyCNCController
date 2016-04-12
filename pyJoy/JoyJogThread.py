@@ -86,7 +86,7 @@ class JoyJogThread(PySide.QtCore.QThread):
                     self.error_event.emit("%s" % e)
                     return
 
-            if self.joy.getButton(0):
+            if self.joy.getButton(pycnc_config.BTN_ZERO):
                 #print "\rSetting zero                          "
                 myXYZ = [0, 0, 0]
                 self.position_updated.emit(myXYZ)
@@ -97,7 +97,7 @@ class JoyJogThread(PySide.QtCore.QThread):
                     self.error_event.emit("%s" % e)
                     return
 
-            if self.joy.getButton(1):
+            if self.joy.getButton(pycnc_config.BTN_ZEROZ):
                 #print "\rSetting zero                          "
                 myXYZ[2] = 0
                 self.position_updated.emit(myXYZ)
@@ -108,7 +108,7 @@ class JoyJogThread(PySide.QtCore.QThread):
                     self.error_event.emit("%s" % e)
                     return
 
-            if self.joy.getButton(3):
+            if self.joy.getButton(pycnc_config.BTN_HOME):
                 #print "\rGoing home                            "
                 myXYZ = [0, 0, 0]
                 #sys.stdout.write("\rX: %.3f, Y: %.3f, Z: %.3f           " % (myXYZ[0], myXYZ[1], myXYZ[2]))
@@ -123,12 +123,12 @@ class JoyJogThread(PySide.QtCore.QThread):
                     return
                 self.position_updated.emit(myXYZ)
 
-            if self.joy.getButton(8):
+            if self.joy.getButton(pycnc_config.BTN_OK):
                 # exit with true
                 self.exit_event.emit(True)
                 break
 
-            if self.joy.getButton(9):
+            if self.joy.getButton(pycnc_config.BTN_CANCEL):
                 self.exit_event.emit(False)
                 break
 
