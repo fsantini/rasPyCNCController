@@ -2,6 +2,8 @@ rasPyCNCController
 ==========
 A simple CNC (Grbl) gcode sender designed tob e used on a 480x320 touchscreen and a joypad.
 
+**Note: This release is yet untested. Please use at your own risk! Soon a tested release will be uploaded**
+
 Requirements
 ------------
 
