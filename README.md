@@ -78,8 +78,8 @@ License
 
 The program is licensed under GPL v3. Please see LICENSE.txt for details.
 The following files contain code from other people:
-GrblWriter.py: contains code from Will Welch, https://github.com/welch/shapeoko
-GCodeAnalyzer.py: contains code from RepetierHost, repetierdev@gmail.com (Licensed under Apache 2.0 License)
+ - GrblWriter.py: contains code from Will Welch, https://github.com/welch/shapeoko
+ - GCodeAnalyzer.py: contains code from RepetierHost, repetierdev@gmail.com (Licensed under Apache 2.0 License)
 Please see the sources for further details on licensing.
 
 > Written with [StackEdit](https://stackedit.io/).
