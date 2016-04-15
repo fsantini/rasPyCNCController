@@ -2,7 +2,7 @@ rasPyCNCController
 ==========
 A simple CNC (Grbl) gcode sender designed tob e used on a 480x320 touchscreen and a joypad.
 
-**Note: This release is yet untested. Please use at your own risk! Soon a tested release will be uploaded**
+**Note: This release is yet not thoroughly tested. Please use at your own risk! Soon a tested release will be uploaded**
 
 Requirements
 ------------
@@ -64,6 +64,12 @@ The estimated time is replaced by a progress bar, and a stop button appears for 
 The “Pause” button (button 10 of the joypad) stores the current position and temporarily enters the jog mode; the user can then move the machine position. When “Resume” is clicked (button 10), the machine will safely move back to the stored position and resume the job.
 
 **Important note: the displayed position information is in millimiters. The program should be able to correctly interpret gcode files in imperial units, but additional testing is required. Estimated time and Pause commands might not work correctly with imperial units.**
+
+Host Commands
+--------
+
+The software supports the host command `@pause`, which can be prefixed by a `;` or enclosed in parentheses (`(@pause)`), in the running GCode to insert a pause in the execution of the program.
+
 
 Configuration
 ------------

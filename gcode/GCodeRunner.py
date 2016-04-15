@@ -103,8 +103,13 @@ class GCodeRunner(QThread):
                 time.sleep(0.1)
                 continue
 
+            line = truncateGCode(self.gcode[self.currentLine])
+            if "@pause" in line:
+                self.currentLine += 1
+                self.pause()
+                continue
+
             try:
-                line = truncateGCode(self.gcode[self.currentLine])
                 self.grblWriter.do_command_nonblock(line)
                 self.currentLine += 1
                 self.progress_event.emit(self.currentLine)

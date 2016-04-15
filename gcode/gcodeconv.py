@@ -29,7 +29,7 @@ class GCodeConverter:
     pass
   
   def convert(self, line):
-    line = line.strip()
+    line = line.strip().upper()
     if line.startswith('G'):
       self.lastG = line.split(' ')[0] # get the GCode
       #is there an X?
