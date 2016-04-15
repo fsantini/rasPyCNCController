@@ -81,6 +81,19 @@ The application can be configured by modifying the `cnc_config.py` file. Many as
 
 The configuration allows the definition of a standard G0 feed rate for the calculation of estimated time; however, the program will attempt to read the actual value from the Grbl configuration at runtime.
 
+Installation
+------------
+
+The software is designed to run on a Raspberry Pi and a 480x320 touchscreen. Smaller touchscreens are not suitable for the interface. Also, the program cannot run without a joypad.
+
+In order to make it pretty, I used a 3D-printed case that can be found [here](http://www.thingiverse.com/thing:1229473).
+
+A ready-made image for a RPi2 can be downloaded from [my website](http://www.francescosantini.com/threed.html).
+
+Here's a picture of my setup:
+
+![Raspberry Pi](http://fsantini.github.com/rasPyCNCController/doc_images/raspberry.jpg)
+
 License
 ------------
 
