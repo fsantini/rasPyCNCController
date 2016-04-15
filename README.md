@@ -26,7 +26,7 @@ Starting the program
 
 The program is started by the following command line:
 
-    Python cncController.py [-f] [-d]
+    python cncController.py [-f] [-d]
 
 The following command-line options can be used:
 

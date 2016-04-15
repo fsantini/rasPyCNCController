@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # rasPyCNCController
 # Copyright 2016 Francesco Santini <francesco.santini@gmail.com>
 #
