@@ -137,16 +137,22 @@ class GCodeAnalyzer():
     self.e = self.lastE
     self.lastMovementGCode = None
     
-    
   def Analyze(self, gcode):
     self.lastGCodeLine = gcode
     if gcode.find(";") >= 0:
-      gcode = gcode[:gcode.find(";")] # remove comments
+      gcode = gcode[:gcode.find(";")]  # remove comments
     if gcode.find("(") >= 0:
-      gcode = gcode[:gcode.find("(")] # remove comments
-      
-    gcode = self.converter.convert(gcode) # handles grbl-style code
-    
+      gcode = gcode[:gcode.find("(")]  # remove comments
+
+    tokens = ['']
+    # convert multiple G commands on one line
+    tokens.extend(re.split('([GM][^GM]+)', gcode, re.I))
+    for line in tokens:
+      if line.strip() != "":
+        #print "Analyze ", line
+        self.AnalyzeLine(self.converter.convert(line))  # handles grbl-style code
+
+  def AnalyzeLine(self, gcode):
     self.lastMovementGCode = None # by default, the move was not a g[0-3]; set it differently in case of actual movement gcode
     
     gcode = gcode.lstrip();

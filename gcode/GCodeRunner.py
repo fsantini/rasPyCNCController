@@ -80,7 +80,11 @@ class GCodeRunner(QThread):
         self.pauseFlag = False
         self.stopFlag = False
 
-        while (self.currentLine < totLines):
+        # make sure we are in absolute positioning when we start. Should be necessary because the gcode file should do it already.
+        self.grblWriter.do_command("G90")
+        self.grblWriter.do_command("G21")
+
+        while self.currentLine < totLines:
 
             if (self.stopFlag):
                 self.grblWriter.reset()
