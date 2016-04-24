@@ -30,6 +30,7 @@ from splash_ui import Ui_Splash
 import pygame
 import time
 import argparse
+from string_format import config_string_format
 
 def waitForJoy():
     pygame.init()
@@ -60,10 +61,12 @@ class MainWindow(QStackedWidget):
         self.addWidget(self.splash)
         self.setCurrentWidget(self.splash)
         self.splash.AbortButton.clicked.connect(self.destroy)
-        self.splash.setText("Waiting for joystick...")
-        QApplication.processEvents()
 
-        waitForJoy()
+        # do not require joystick
+        #self.splash.setText("Waiting for joystick...")
+        #QApplication.processEvents()
+
+        #waitForJoy()
 
         self.splash.setText("Waiting for CNC...")
         QApplication.processEvents()
@@ -106,7 +109,7 @@ class MainWindow(QStackedWidget):
         self.runWidget.pause_event.connect(self.doPause) # when this is called, the pause was already generated
 
         self.setCurrentWidget(self.jogWidget)
-        self.jogWidget.startJoy()
+        self.jogWidget.startJoggers()
 
     # changes the appearance of the jog widget to work during pause
     def _reconfigureJogWidget(self, pauseFlag):
@@ -124,9 +127,9 @@ class MainWindow(QStackedWidget):
                 print "Can't jogWidget.load_event.disconnect(self.loadFile)"
                 pass
             self.jogWidget.RunButton.originalText = self.jogWidget.RunButton.text()
-            self.jogWidget.RunButton.setText("Cancel (9)")
+            self.jogWidget.RunButton.setText( config_string_format( QApplication.translate("joyWidget", "Cancel (%BTN_OK+1%)", None, QApplication.UnicodeUTF8)) )
             self.jogWidget.LoadButton.originalText = self.jogWidget.LoadButton.text()
-            self.jogWidget.LoadButton.setText("Resume (10)")
+            self.jogWidget.LoadButton.setText(config_string_format( QApplication.translate("joyWidget", "Resume (%BTN_CANCEL+1%)", None, QApplication.UnicodeUTF8)))
 
             self.jogWidget.run_event.connect(self.cancelPause)
             self.jogWidget.load_event.connect(self.doResume)
@@ -152,7 +155,7 @@ class MainWindow(QStackedWidget):
             return
         self._reconfigureJogWidget(True)
         self.setCurrentWidget(self.jogWidget)
-        self.jogWidget.startJoy()
+        self.jogWidget.startJoggers()
 
     def doResume(self):
         self._reconfigureJogWidget(False)
@@ -163,17 +166,17 @@ class MainWindow(QStackedWidget):
     def cancelPause(self):
         self.runWidget.cancelPause()
         self._reconfigureJogWidget(False)
-        self.jogWidget.startJoy()
+        self.jogWidget.startJoggers()
 
     def exitRequest(self):
         flags = QMessageBox.StandardButton.Yes
         flags |= QMessageBox.StandardButton.No
-        question = "Do you really want to exit?"
+        question = QApplication.translate("cncController", "Do you really want to exit?", None, QApplication.UnicodeUTF8)
         response = QMessageBox.question(self, "Question",
                                               question,
                                               flags)
         if response == QMessageBox.Yes:
-            self.jogWidget.stopJoy()
+            self.jogWidget.stopJoggers()
             self.destroy()
 
 
@@ -188,14 +191,14 @@ class MainWindow(QStackedWidget):
     # we get here from the listWidget: activate the jogwidget and load the file
     def fileSelected(self, filename):
         self.setCurrentWidget(self.jogWidget)
-        self.jogWidget.startJoy()
+        self.jogWidget.startJoggers()
         QApplication.processEvents()
         self.jogWidget.loadFile(filename)
 
     # reactivate jogWidget without changing anything
     def cancelFileSelected(self, filename):
         self.setCurrentWidget(self.jogWidget)
-        self.jogWidget.startJoy()
+        self.jogWidget.startJoggers()
 
     def runFile(self):
         if self.jogWidget.isFileLoaded == False:
@@ -207,7 +210,7 @@ class MainWindow(QStackedWidget):
 
     def runEnd(self):
         self.setCurrentWidget(self.jogWidget)
-        self.jogWidget.startJoy()
+        self.jogWidget.startJoggers()
 
     def grblError(self):
         # reset grbl
@@ -219,7 +222,7 @@ class MainWindow(QStackedWidget):
             time.sleep(0.5)
 
         self.setCurrentWidget(self.jogWidget)
-        self.jogWidget.startJoy()
+        self.jogWidget.startJoggers()
 
 
 

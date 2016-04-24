@@ -24,6 +24,7 @@ import os
 import os.path
 import re
 import pycnc_config
+from string_format import config_string_format
 
 
 # see: https://stackoverflow.com/questions/2696733/set-bold-rows-in-a-qtreeview
@@ -42,6 +43,10 @@ class FileList(Ui_FileList, QWidget):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
         self.setupUi(self)
+
+        # replace button text with config placeholders
+        self.OKButton.setText(config_string_format(self.OKButton.text()))
+        self.CancelButton.setText(config_string_format(self.CancelButton.text()))
 
         ## config params
         self.path=os.path.abspath(".")

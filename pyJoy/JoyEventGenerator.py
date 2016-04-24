@@ -85,6 +85,7 @@ class JoyEventGenerator(QThread):
   def run(self):
     pygame.init()
     pygame.joystick.init()
+    if pygame.joystick.get_count() == 0: return
     self.joystick = pygame.joystick.Joystick(0)
     self.joystick.init()
     pygame.event.get()

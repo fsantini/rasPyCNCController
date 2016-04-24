@@ -325,7 +325,7 @@
     </font>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Joypad buttons:&lt;/p&gt;&lt;p&gt;1: Set zero&lt;br/&gt;2: Set Z=0&lt;br/&gt;3: Go to zero&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Joypad buttons:&lt;/p&gt;&lt;p&gt;%BTN_ZERO+1%: Set zero&lt;br/&gt;%BTN_ZEROZ+1%: Set Z=0&lt;br/&gt;%BTN_HOME+1%: Go to zero&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -349,7 +349,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Run (9)</string>
+    <string>Run (%BTN_OK+1%)</string>
    </property>
   </widget>
   <widget class="QPushButton" name="LoadButton">
@@ -370,7 +370,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Load (10)</string>
+    <string>Load (%BTN_CANCEL+1%)</string>
    </property>
   </widget>
   <widget class="QPushButton" name="exitButton">

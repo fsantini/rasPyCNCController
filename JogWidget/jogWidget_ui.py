@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'JogWidget/jogWidget.ui'
 #
-# Created: Sun Apr 10 19:36:34 2016
-#      by: pyside-uic 0.2.15 running on PySide 1.2.1
+# Created: Sun Apr 24 11:46:15 2016
+#      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -167,7 +167,7 @@ class Ui_joyWidget(object):
         self.BBOxGroup.setTitle(QtGui.QApplication.translate("joyWidget", "Bounding box", None, QtGui.QApplication.UnicodeUTF8))
         self.estTimeGroup.setTitle(QtGui.QApplication.translate("joyWidget", "Estimated time", None, QtGui.QApplication.UnicodeUTF8))
         self.estTimeTxt.setText(QtGui.QApplication.translate("joyWidget", "00:00:00", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("joyWidget", "<html><head/><body><p>Joypad buttons:</p><p>1: Set zero<br/>2: Set Z=0<br/>3: Go to zero</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
-        self.RunButton.setText(QtGui.QApplication.translate("joyWidget", "Run (9)", None, QtGui.QApplication.UnicodeUTF8))
-        self.LoadButton.setText(QtGui.QApplication.translate("joyWidget", "Load (10)", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("joyWidget", "<html><head/><body><p>Joypad buttons:</p><p>%BTN_ZERO+1%: Set zero<br/>%BTN_ZEROZ+1%: Set Z=0<br/>%BTN_HOME+1%: Go to zero</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
+        self.RunButton.setText(QtGui.QApplication.translate("joyWidget", "Run (%BTN_OK+1%)", None, QtGui.QApplication.UnicodeUTF8))
+        self.LoadButton.setText(QtGui.QApplication.translate("joyWidget", "Load (%BTN_CANCEL+1%)", None, QtGui.QApplication.UnicodeUTF8))
 

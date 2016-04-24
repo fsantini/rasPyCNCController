@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'pyFileList/filelist.ui'
 #
-# Created: Sun Apr 10 19:36:34 2016
-#      by: pyside-uic 0.2.15 running on PySide 1.2.1
+# Created: Sun Apr 24 11:46:15 2016
+#      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -16,7 +16,7 @@ class Ui_FileList(object):
         self.listView_right = QtGui.QListView(FileList)
         self.listView_right.setGeometry(QtCore.QRect(150, 10, 321, 236))
         font = QtGui.QFont()
-        font.setPointSize(12)
+        font.setPointSize(16)
         font.setWeight(75)
         font.setBold(True)
         self.listView_right.setFont(font)
@@ -24,7 +24,7 @@ class Ui_FileList(object):
         self.listView_left = QtGui.QListView(FileList)
         self.listView_left.setGeometry(QtCore.QRect(0, 10, 141, 236))
         font = QtGui.QFont()
-        font.setPointSize(12)
+        font.setPointSize(16)
         font.setWeight(75)
         font.setBold(True)
         self.listView_left.setFont(font)
@@ -53,6 +53,6 @@ class Ui_FileList(object):
 
     def retranslateUi(self, FileList):
         FileList.setWindowTitle(QtGui.QApplication.translate("FileList", "Form", None, QtGui.QApplication.UnicodeUTF8))
-        self.OKButton.setText(QtGui.QApplication.translate("FileList", "OK (9)", None, QtGui.QApplication.UnicodeUTF8))
-        self.CancelButton.setText(QtGui.QApplication.translate("FileList", "Cancel (10)", None, QtGui.QApplication.UnicodeUTF8))
+        self.OKButton.setText(QtGui.QApplication.translate("FileList", "OK (%BTN_OK+1%)", None, QtGui.QApplication.UnicodeUTF8))
+        self.CancelButton.setText(QtGui.QApplication.translate("FileList", "Cancel (%BTN_CANCEL+1%)", None, QtGui.QApplication.UnicodeUTF8))
 

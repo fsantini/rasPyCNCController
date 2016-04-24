@@ -43,7 +43,7 @@ class GrblWriterBasic(QObject):
         print(gcode)
         self.analyzer.Analyze(gcode)
         self.position_updated.emit(self.analyzer.getPosition())
-        time.sleep(0.01)
+        time.sleep(0.1)
 
     def wait_motion(self):
         pass

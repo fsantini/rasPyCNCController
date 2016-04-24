@@ -24,7 +24,7 @@
    </property>
    <property name="font">
     <font>
-     <pointsize>12</pointsize>
+     <pointsize>16</pointsize>
      <weight>75</weight>
      <bold>true</bold>
     </font>
@@ -41,7 +41,7 @@
    </property>
    <property name="font">
     <font>
-     <pointsize>12</pointsize>
+     <pointsize>16</pointsize>
      <weight>75</weight>
      <bold>true</bold>
     </font>
@@ -65,7 +65,7 @@
     </font>
    </property>
    <property name="text">
-    <string>OK (9)</string>
+    <string>OK (%BTN_OK+1%)</string>
    </property>
   </widget>
   <widget class="QPushButton" name="CancelButton">
@@ -86,7 +86,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Cancel (10)</string>
+    <string>Cancel (%BTN_CANCEL+1%)</string>
    </property>
   </widget>
  </widget>

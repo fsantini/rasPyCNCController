@@ -1,3 +1,5 @@
+from PySide.QtCore import Qt
+
 # GrblWriter
 
 SERIAL_PATTERN="/dev/ttyACM*"
@@ -31,6 +33,17 @@ BTN_CANCEL=9
 BTN_ZERO=0
 BTN_ZEROZ=1
 BTN_HOME=2
+
+# KeyboardJogger
+KEY_XPOS = [Qt.Key_6]
+KEY_XNEG = [Qt.Key_4]
+KEY_YPOS = [Qt.Key_8]
+KEY_YNEG = [Qt.Key_2]
+KEY_ZPOS = [Qt.Key_9]
+KEY_ZNEG = [Qt.Key_3]
+KEY_SETHOME = [Qt.Key_0]
+KEY_SETZ0 = [Qt.Key_Enter]
+KEY_HOME = [Qt.Key_5]
 
 # JoyStatus
 # Mapping of joystick buttons and axes to movements.

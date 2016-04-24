@@ -16,17 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with rasPyCNCController.  If not, see <http://www.gnu.org/licenses/>.
 
+import os.path
 import sys
 import time
 
 from PySide.QtCore import *
 from PySide.QtGui import *
 
-from jogWidget_ui import Ui_joyWidget
-from pyJoy.JoyJogThread import JoyJogThread
+from Joggers.JoyJogThread import JoyJogThread
+from Joggers.KeyboardJogger import KeyboardJogger
 from gcode.GCodeLoader import GCodeLoader
-import os.path
+from gcode.JogHelper import JogHelper
+from jogWidget_ui import Ui_joyWidget
 
+from string_format import config_string_format
 
 class JogWidget(Ui_joyWidget, QWidget):
 
@@ -38,24 +41,53 @@ class JogWidget(Ui_joyWidget, QWidget):
         QWidget.__init__(self, parent)
         self.setupUi(self)
 
+        # convert placeholders into config values for the widgets
+        self.RunButton.setText(config_string_format(self.RunButton.text()))
+        self.LoadButton.setText(config_string_format(self.LoadButton.text()))
+        self.label.setText(config_string_format(self.label.text()))
+
         self.RunButton.clicked.connect(self.runEvent)
         self.LoadButton.clicked.connect(self.loadEvent)
 
         self.joyJog = JoyJogThread()
+        self.keyJog = KeyboardJogger()
         self.grblWriter = None
-        # get the position from the writer - see below
-        # self.joyJog.position_updated.connect(self.setPosition)
-        self.joyJog.exit_event.connect(self.joyExitEvent)
+        self.jogHelper = JogHelper()
+
         # propagate a GRBL error
-        self.joyJog.error_event.connect(lambda err: self.error_event.emit(err))
+        self.jogHelper.error_event.connect(lambda err: self.error_event.emit(err))
         self.setPosition([0,0,0])
         self.disableControls()
         self.isFileLoaded = False
+        self.joggers = []
+
+        self.installJogger(self.joyJog)
+        self.installJogger(self.keyJog)
+
+    def installJogger(self, jogger):
+        jogger.install(self)
+        jogger.exit_event.connect(self.joyExitEvent)
+        jogger.relative_move_event.connect(self.relativeMove)
+        jogger.absolute_move_event.connect(self.absoluteMove)
+        jogger.home_update_event.connect(self.homeUpdate)
+        self.joggers.append(jogger)
+
+
+    def relativeMove(self, xyz, feed):
+        if self.jogHelper.isBusy(): return
+        self.jogHelper.relative_move(xyz, feed)
+
+    def absoluteMove(self, xyz, feed):
+        if self.jogHelper.isBusy(): return
+        self.jogHelper.absolute_move(xyz, feed)
+
+    def homeUpdate(self, xyz):
+        self.jogHelper.home_update(xyz)
 
     def setGrbl(self, grblWriter):
         self.grblWriter = grblWriter
         self.grblWriter.position_updated.connect(self.setPosition)
-        self.joyJog.setGrbl(grblWriter)
+        self.jogHelper.setGrbl(grblWriter)
 
     def fileLoaded(self):
         self.isFileLoaded = True
@@ -125,13 +157,13 @@ class JogWidget(Ui_joyWidget, QWidget):
 
         self.estTimeTxt.setText("%02d:%02d:%02d" % (hours, mins, secs))
 
-    def startJoy(self):
-        time.sleep(0.5)
-        self.joyJog.start()
+    def startJoggers(self):
+        for jogger in self.joggers:
+            jogger.start()
 
-    def stopJoy(self):
-        self.joyJog.stop()
-        time.sleep(0.1)
+    def stopJoggers(self):
+        for jogger in self.joggers:
+            jogger.stop()
 
     def setPosition(self, posXYZ):
         self.xPosTxt.setText("%.1f" % posXYZ[0])
@@ -139,11 +171,11 @@ class JogWidget(Ui_joyWidget, QWidget):
         self.zPosTxt.setText("%.1f" % posXYZ[2])
 
     def runEvent(self):
-        self.stopJoy()
+        self.stopJoggers()
         self.run_event.emit()
 
     def loadEvent(self):
-        self.stopJoy()
+        self.stopJoggers()
         self.load_event.emit()
 
     def joyExitEvent(self, exitCondition):
@@ -156,7 +188,7 @@ class JogWidget(Ui_joyWidget, QWidget):
                 #runbutton is not enabled: restart the joy
                 # give sime time to the thread to exit and then restart it
                 time.sleep(0.1)
-                self.startJoy()
+                self.startJoggers()
         else:
             self.loadEvent()
 
@@ -169,6 +201,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     grbl = GrblWriter_debug()
     window = JogWidget(grbl)
-    window.destroyed.connect(window.stopJoy)
+    window.destroyed.connect(window.stopJoggers)
     window.show()
     sys.exit(app.exec_())

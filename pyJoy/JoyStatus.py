@@ -41,10 +41,10 @@ class JoyStatus:
     return 0
   
   def getHat(self, hat):
-    if not self.joystick: return 0      
+    if not self.joystick: return (0, 0)
     if hat < self.joystick.get_numhats():
       return self.joystick.get_hat(hat)
-    return 0
+    return (0, 0)
   
   def getButton(self, btn):
     if not self.joystick: return 0
