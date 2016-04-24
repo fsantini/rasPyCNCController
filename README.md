@@ -36,7 +36,7 @@ The following command-line options can be used:
 Usage
 --------
 
-When first started, the program will look for a joystick and a serial connection to a CNC machine. Once both are found, the program will enter “jog mode”, showing the following screen:
+When first started, the program will look for a serial connection to a CNC machine. Once both are found, the program will enter “jog mode”, showing the following screen:
 
 ![JogWidget start screen](http://fsantini.github.com/rasPyCNCController/doc_images/jogwidget_noLoad.jpg)
 
@@ -64,6 +64,19 @@ The estimated time is replaced by a progress bar, and a stop button appears for 
 The “Pause” button (button 10 of the joypad) stores the current position and temporarily enters the jog mode; the user can then move the machine position. When “Resume” is clicked (button 10), the machine will safely move back to the stored position and resume the job.
 
 **Important note: the displayed position information is in millimiters. The program should be able to correctly interpret gcode files in imperial units, but additional testing is required. Estimated time and Pause commands might not work correctly with imperial units.**
+
+Jogging
+--------
+
+The program is designed to work with a joypad. However, jog commands using a numeric keypad are also supported. Only 1mm movements are supported at the moment and the key mapping is the following:
+ - 4,6: X movement
+ - 8,2: Y movement
+ - 9,3: Z movement
+ - 5: Go home
+ - 0: Set home
+ - Enter: Set Z=0
+ 
+You can also write your own joggers to support more devices. Please see the Joggers/AbstractJogger.py file for more instructions.
 
 Host Commands
 --------
