@@ -74,9 +74,9 @@ class JoyJogThread(PySide.QtCore.QThread, AbstractJogger):
                 self.home_update_event.emit([None, None, 0])
 
             if self.joy.getButton(pycnc_config.BTN_HOME):
-                #print "\rGoing home                            "
                 myXYZ = [0, 0, 0]
-                self.absolute_move_event.emit(myXYZ, None)
+                #self.absolute_move_event.emit(myXYZ, None)
+                self.absolute_move_event.emit(myXYZ, -1) # None doen't work here for some reason
 
             if self.joy.getButton(pycnc_config.BTN_OK):
                 # exit with true

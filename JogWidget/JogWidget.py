@@ -75,10 +75,12 @@ class JogWidget(Ui_joyWidget, QWidget):
 
     def relativeMove(self, xyz, feed):
         if self.jogHelper.isBusy(): return
+        if feed is not None and feed <= 0: feed = None
         self.jogHelper.relative_move(xyz, feed)
 
     def absoluteMove(self, xyz, feed):
         if self.jogHelper.isBusy(): return
+        if feed is not None and feed <= 0: feed=None
         self.jogHelper.absolute_move(xyz, feed)
 
     def homeUpdate(self, xyz):
