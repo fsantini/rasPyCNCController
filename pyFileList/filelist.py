@@ -151,7 +151,7 @@ class FileList(Ui_FileList, QWidget):
     def acceptFile(self, f):
         accept = False
         for pattern in self.fileFilters:
-            if re.match(pattern, f):
+            if re.match(pattern, f, re.I):
                 accept = True
 
         return accept
