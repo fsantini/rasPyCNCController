@@ -89,6 +89,13 @@ class FileList(Ui_FileList, QWidget):
             self.modelParts.appendRow(item)
             self.parts.append(part.mountpoint)
 
+        for mountpoint in pycnc_config.EXTRA_MOUNTPOINTS:
+            item = QStandardItem(mountpoint)
+            item.setCheckable(False)
+            item.setEditable(False)
+            self.modelParts.appendRow(item)
+            self.parts.append(mountpoint)
+
     def fileChanged(self):
         selIndex = self.getSelFileIndex()
         self.currentFile = ""

@@ -9,6 +9,7 @@ SERIAL_DEBUG = False # define if serial communication should be shown
 # filelist
 # patterns for gcode files
 GCODE_PATTERN = ['.*\.nc', '.*\.ngc', '.*\.gc', '.*\.gcode']
+EXTRA_MOUNTPOINTS = [] # extra directories to show in the file list dialog
 
 # enabled joggers. If a jogger is not found, it is anyway disregarded. Should be safe leaving them on true
 JOG_KEYBOARD_ENABLED = True
