@@ -86,7 +86,7 @@ class JogHelper(QObject):
     def relative_move(self, xyz, feed = None):
         if self.grblWriter is None: return
 
-        if feed is None:
+        if feed is None or feed < 0:
             cmd = "G0 X%.1f Y%.1f Z%.1f" % ( xyz[0], xyz[1], xyz[2])
         else:
             cmd = "G1 X%.1f Y%.1f Z%.1f F%d" % (xyz[0], xyz[1], xyz[2], feed)
@@ -105,7 +105,7 @@ class JogHelper(QObject):
     def absolute_move(self, xyz, feed = None):
         if self.grblWriter is None: return
 
-        if feed is None:
+        if feed is None or feed < 0:
             cmd = "G0 X%.1f Y%.1f Z%.1f" % ( xyz[0], xyz[1], xyz[2])
         else:
             cmd = "G1 X%.1f Y%.1f Z%.1f F%d" % (xyz[0], xyz[1], xyz[2], feed)

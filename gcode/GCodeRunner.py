@@ -121,6 +121,7 @@ class GCodeRunner(QThread):
                 e = sys.exc_info()[0]
                 self.error_event.emit("%s" % e)
 
+        print "File finished. Waiting for last ack"
         # wait for the last ack
         while True:
             ack, lineIn = self.grblWriter.ack_received()
@@ -128,9 +129,13 @@ class GCodeRunner(QThread):
                 break
             time.sleep(0.01)
 
+        print "Waiting for motion to finish"
         #self.grblWriter.wait_motion()
         self.grblWriter.wait_motion_nonblock()
-        while not self.grblWriter.ack_received():
+        while True:
+            ack, lineIn = self.grblWriter.ack_received()
+            if ack:
+                break
             if self.stopFlag:
                 self.grblWriter.reset()
                 self.stop_event.emit()

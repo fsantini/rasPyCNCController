@@ -26,9 +26,9 @@ from AbstractJogger import AbstractJogger
 
 class JoyJogThread(PySide.QtCore.QThread, AbstractJogger):
 
-    def __init_(self):
+    def __init__(self):
         PySide.QtCore.QThread.__init__(self)
-        AbstractJogger.__init__(self)
+        #AbstractJogger.__init__(self)
         self.killMe = False
 
     def start(self):

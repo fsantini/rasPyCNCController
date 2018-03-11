@@ -4,12 +4,19 @@ from PySide.QtCore import Qt
 
 SERIAL_PATTERN="/dev/ttyACM*"
 BAUD=115200
+SERIAL_DEBUG = False # define if serial communication should be shown
 
 # filelist
 # patterns for gcode files
 GCODE_PATTERN = ['.*\.nc', '.*\.ngc', '.*\.gc', '.*\.gcode']
 
-# JoyJogThread: standard feed rates used for jogging the machine
+# enabled joggers. If a jogger is not found, it is anyway disregarded. Should be safe leaving them on true
+JOG_KEYBOARD_ENABLED = True
+JOG_JOYPAD_ENABLED = True
+JOG_SHUTTLE_ENABLED = True
+
+
+# standard feed rates used for jogging the machine
 STD_FEED=2000
 STD_FEED_Z=1000
 
@@ -74,3 +81,24 @@ JOY_ZAXIS_MAP = {
   'btns' : [ 4, 5, 6, 7 ],
   'btnsMult' : [ 1, -1, 0.1, -0.1]
 }
+
+# Shuttle jogger
+SHUTTLE_IDENTIFIER = 'ShuttleXpress' # how the system identifies the Shuttle
+SHUTTLE_STEPSIZES = [0.1, 1.0, 10.0] # pressing button 5 changes step sizes of the dial
+def SHUTTLE_WHEEL_TO_MOVEMENT_TRANSFORMATION(wheelValue): # this function defines how the wheel rotation is mapped to machine movement. This is simple 1:1. Might be quadratic or exponential?
+  return wheelValue
+
+# evdev codes for shuttle inputs. Don't change if you don't know what this is. Useful it you are not using the exact shuttlexpress. Use the evtest linux command
+SHUTTLE_BUTTON_1 = 260
+SHUTTLE_BUTTON_2 = 261
+SHUTTLE_BUTTON_3 = 262
+SHUTTLE_BUTTON_4 = 263
+SHUTTLE_BUTTON_5 = 264
+
+SHUTTLE_WHEEL = 8
+SHUTTLE_DIAL = 7
+
+# Probing
+ENABLE_PROBING = True
+PROBING_DISTANCE = 20 # maximum distance the probe should travel in the Z direction
+PROBING_FEED = 10 # speed at which the probe should travel

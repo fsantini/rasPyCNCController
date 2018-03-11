@@ -25,11 +25,14 @@ from PySide.QtGui import *
 
 from Joggers.JoyJogThread import JoyJogThread
 from Joggers.KeyboardJogger import KeyboardJogger
+from Joggers.ShuttleJogger import ShuttleJogger
 from gcode.GCodeLoader import GCodeLoader
 from gcode.JogHelper import JogHelper
 from jogWidget_ui import Ui_joyWidget
 
 from string_format import config_string_format
+
+import pycnc_config
 
 class JogWidget(Ui_joyWidget, QWidget):
 
@@ -49,8 +52,14 @@ class JogWidget(Ui_joyWidget, QWidget):
         self.RunButton.clicked.connect(self.runEvent)
         self.LoadButton.clicked.connect(self.loadEvent)
 
-        self.joyJog = JoyJogThread()
-        self.keyJog = KeyboardJogger()
+        if pycnc_config.ENABLE_PROBING:
+            self.ZProbeButton.clicked.connect(self.zProbeEvent)
+            self.GridProbeButton.clicked.connect(self.gridProbeEvent)
+        else:
+            self.ZProbeButton.setVisible(False)
+            self.GridProbeButton.setVisible(False)
+
+
         self.grblWriter = None
         self.jogHelper = JogHelper()
 
@@ -61,8 +70,57 @@ class JogWidget(Ui_joyWidget, QWidget):
         self.isFileLoaded = False
         self.joggers = []
 
-        self.installJogger(self.joyJog)
-        self.installJogger(self.keyJog)
+        if pycnc_config.JOG_JOYPAD_ENABLED:
+            self.joyJog = JoyJogThread()
+            self.installJogger(self.joyJog)
+
+        if pycnc_config.JOG_KEYBOARD_ENABLED:
+            self.keyJog = KeyboardJogger()
+            self.installJogger(self.keyJog)
+
+        if pycnc_config.JOG_SHUTTLE_ENABLED:
+            self.shuttleJog = ShuttleJogger()
+            self.installJogger(self.shuttleJog)
+
+    def probeWarning(self):
+        res = QMessageBox.warning(self, "Probe warning", "Are you at a safe Z (<20mm)?", QMessageBox.Yes | QMessageBox.No)
+        if res == QMessageBox.No:
+            return False
+
+        res = QMessageBox.warning(self, "Probe warning", "Is the probe connected?", QMessageBox.Yes | QMessageBox.No)
+        if res == QMessageBox.No:
+            return False
+
+        return True
+
+    def zProbeEvent(self):
+        if not self.grblWriter: return
+        if self.probeWarning():
+            currentZ = self.grblWriter.probe_z_offset()
+            if currentZ is None:
+                QMessageBox.warning(self, "Error probing", "Error probing!")
+                return
+            self.grblWriter.do_command("G0 Z" + str(-currentZ))
+
+    def gridProbeEvent(self):
+        if not self.grblWriter: return
+
+        if self.GridProbeButton.text() == "Clear Grid":
+            self.grblWriter.compensate_z(False)
+            self.grblWriter.zCompensation = None
+            self.GridProbeButton.setText("Grid Probe")
+            return
+
+        if not self.probeWarning(): return
+
+        res = self.grblWriter.probe_grid((self.bBox[0][0], self.bBox[1][0]), (self.bBox[0][1], self.bBox[1][1]), 10) # TODO: remove hardcoded spacing
+        if not res:
+            # error in probing
+            QMessageBox.warning(self, "Error probing", "Error probing!")
+            return
+
+        self.grblWriter.compensate_z(True)
+        self.GridProbeButton.setText("Clear Grid")
 
     def installJogger(self, jogger):
         jogger.install(self)
@@ -103,6 +161,7 @@ class JogWidget(Ui_joyWidget, QWidget):
         self.BBOxGroup.setEnabled(True)
         self.estTimeGroup.setEnabled(True)
         self.fileLabel.setText(os.path.basename(self.loader.file))
+        self.GridProbeButton.setEnabled(True)
 
     def loadError(self, err):
         self.fileLabel.setText("Error loading: %s" % err)
@@ -111,6 +170,9 @@ class JogWidget(Ui_joyWidget, QWidget):
         self.file = filename
         self.isFileLoaded = False
         self.disableControls()
+        #if self.grblWriter: # new file: discard old z compensation.
+        #    self.grblWriter.compensate_z(False)
+        #    self.grblWriter.zCompensation = None
         self.loader = GCodeLoader()
         self.loader.g0_feed = self.grblWriter.g0_feed
         self.loader.load_finished.connect(self.fileLoaded)
@@ -130,6 +192,7 @@ class JogWidget(Ui_joyWidget, QWidget):
         self.estTimeGroup.setEnabled(False)
         self.setBBox(None)
         self.setEstTime(None)
+        self.GridProbeButton.setEnabled(False)
 
     def setBBox(self, BBox):
         if BBox == None:
