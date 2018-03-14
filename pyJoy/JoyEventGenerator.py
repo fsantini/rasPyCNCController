@@ -83,9 +83,10 @@ class JoyEventGenerator(QThread):
     print "Button event", bEv
   
   def run(self):
+    if not self.joystick: return
     pygame.init()
     pygame.joystick.init()
-    if pygame.joystick.get_count() == 0: return
+    #if pygame.joystick.get_count() == 0: return
     self.joystick = pygame.joystick.Joystick(0)
     self.joystick.init()
     pygame.event.get()

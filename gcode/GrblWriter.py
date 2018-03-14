@@ -88,6 +88,8 @@ class ZCompensation:
             # it must be a number, not a range
             self.yrange = (0.0, float(yRangeOrSize))
 
+        self.spacing = spacing
+
         if self.xrange[0] > self.xrange[1]: self.xrange = (self.xrange[1], self.xrange[0])
         if self.yrange[0] > self.yrange[1]: self.yrange = (self.yrange[1], self.yrange[0])
 
@@ -257,7 +259,7 @@ class GrblWriter(QObject):
             response = self.read_response()
         else:
             #print "Z compensation: original command ", lastMoveCommand.getCommand()
-            for splitted_cmd in lastMoveCommand.splitMovement(10):
+            for splitted_cmd in lastMoveCommand.splitMovement(self.zCompensation.spacing):
                 #print "Z compensation: splitted command ", splitted_cmd.getCommand()
                 #print "Z compensation: ",  self.zCompensation.getZValue(splitted_cmd.x, splitted_cmd.y)
                 splitted_cmd.z += self.zCompensation.getZValue(splitted_cmd.x, splitted_cmd.y)
@@ -313,7 +315,7 @@ class GrblWriter(QObject):
         else: #business as usual
             self.serial.write(command + '\n')
         self.position_updated.emit(self.analyzer.getPosition())
-        print "Nonblock: wait ack status", self.waitAck
+        #print "Nonblock: wait ack status", self.waitAck
 
     def ack_received(self):
         if self.waitAck == 0: # waitAck is an integer because there can be more commands in the queue to be executed. TODO: test!

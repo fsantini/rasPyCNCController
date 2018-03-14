@@ -39,6 +39,7 @@ class JoyJogThread(PySide.QtCore.QThread, AbstractJogger):
 
     def run(self):
         self.joy = pyJoy.JoyStatus.JoyStatus()
+        if self.joy.joystick is None: return
 
         myXYZ = [0,0,0]
 

@@ -103,3 +103,4 @@ SHUTTLE_DIAL = 7
 ENABLE_PROBING = True
 PROBING_DISTANCE = 20 # maximum distance the probe should travel in the Z direction
 PROBING_FEED = 10 # speed at which the probe should travel
+PROBING_SPACING = 10 # spacing in the probe grid

@@ -13,12 +13,14 @@ class WheelEventThread(PySide.QtCore.QThread):
     def __init__(self, jogger):
         PySide.QtCore.QThread.__init__(self)
         self.jogger = jogger
+        self.active = False
 
     def start(self):
         self.killMe = False
         PySide.QtCore.QThread.start(self)
 
     def run(self):
+        self.active = True
         while not self.killMe:
             if self.jogger.activeAxis != 0 and self.jogger.wheelStatus != 0:
                 if self.jogger.activeAxis == 3: # Z axis
@@ -30,6 +32,8 @@ class WheelEventThread(PySide.QtCore.QThread):
                 xyz[self.jogger.activeAxis-1] = self.jogger.wheelStatus
                 self.jogger.relative_move_event.emit(xyz, feed)
                 time.sleep(float(pycnc_config.BTN_REPEAT) / 1000.0) # limit events to 1 each BTN_REPEAT
+
+        self.active = False
 
     def stop(self):
         self.killMe = True
@@ -73,6 +77,7 @@ class ShuttleJogger(PySide.QtCore.QThread, AbstractJogger):
 
         #self.relative_move_event.connect(self.printMove)
         self.wheelEventThread = WheelEventThread(self)
+        self.jogWidget = None
 
     def printMove(self, xyz, feed):
         print xyz, "Feed", feed
@@ -91,8 +96,6 @@ class ShuttleJogger(PySide.QtCore.QThread, AbstractJogger):
         self.activeAxis = 0
         self.currentStepSizeIndex = 0
 
-        self.wheelEventThread.start()
-        time.sleep(0.1)
         PySide.QtCore.QThread.start(self)
         time.sleep(0.1)
 
@@ -122,6 +125,8 @@ class ShuttleJogger(PySide.QtCore.QThread, AbstractJogger):
                     if self.currentStepSizeIndex >= len(self.STEPSIZE):
                         self.currentStepSizeIndex = 0
 
+                    self.jogWidget.posGroup.setTitle("%s - Step: %.1f" % (self.originalText, self.STEPSIZE[self.currentStepSizeIndex]))
+
             if self.eventBlock.value == self.BUTTON_UP: # if an axis button is released, disable motion control
                 if self.eventBlock.code in self.XYZBUTTONS:
                     self.activeAxis = 0
@@ -149,6 +154,12 @@ class ShuttleJogger(PySide.QtCore.QThread, AbstractJogger):
                 xyz[self.activeAxis-1] = float(currentDelta) * self.STEPSIZE[self.currentStepSizeIndex]
                 self.relative_move_event.emit(xyz, -1)
 
+        if self.activeAxis != 0 and self.wheelStatus != 0:
+            if not self.wheelEventThread.active:
+                self.wheelEventThread.start()
+        else:
+            if self.wheelEventThread.active:
+                self.wheelEventThread.stop()
 
         self.eventBlock = None
 
@@ -186,7 +197,8 @@ class ShuttleJogger(PySide.QtCore.QThread, AbstractJogger):
 
     # attach this jogger to a particular widget. Use for example to install a keyboard filter
     def install(self, widget):
-        pass
+        self.jogWidget = widget
+        self.originalText = widget.posGroup.title()
 
 if __name__ == '__main__':
 

@@ -83,7 +83,7 @@ class JogWidget(Ui_joyWidget, QWidget):
             self.installJogger(self.shuttleJog)
 
     def probeWarning(self):
-        res = QMessageBox.warning(self, "Probe warning", "Are you at a safe Z (<20mm)?", QMessageBox.Yes | QMessageBox.No)
+        res = QMessageBox.warning(self, "Probe warning", "Are you at a safe Z?", QMessageBox.Yes | QMessageBox.No)
         if res == QMessageBox.No:
             return False
 
@@ -113,7 +113,7 @@ class JogWidget(Ui_joyWidget, QWidget):
 
         if not self.probeWarning(): return
 
-        res = self.grblWriter.probe_grid((self.bBox[0][0], self.bBox[1][0]), (self.bBox[0][1], self.bBox[1][1]), 10) # TODO: remove hardcoded spacing
+        res = self.grblWriter.probe_grid((self.bBox[0][0], self.bBox[1][0]), (self.bBox[0][1], self.bBox[1][1]), pycnc_config.PROBING_SPACING)
         if not res:
             # error in probing
             QMessageBox.warning(self, "Error probing", "Error probing!")
