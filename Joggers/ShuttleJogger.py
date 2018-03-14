@@ -193,7 +193,8 @@ class ShuttleJogger(PySide.QtCore.QThread, AbstractJogger):
         self.killMe = True
         self.wheelEventThread.stop()
         time.sleep(0.1)
-        self.shuttleDev.ungrab()
+        if self.shuttleDev:
+            self.shuttleDev.ungrab()
 
     # attach this jogger to a particular widget. Use for example to install a keyboard filter
     def install(self, widget):
