@@ -130,6 +130,7 @@ class ShuttleJogger(PySide.QtCore.QThread, AbstractJogger):
             if self.eventBlock.value == self.BUTTON_UP: # if an axis button is released, disable motion control
                 if self.eventBlock.code in self.XYZBUTTONS:
                     self.activeAxis = 0
+                    self.wheelStatus = 0
 
 
         if self.eventBlock.code == self.WHEEL:
