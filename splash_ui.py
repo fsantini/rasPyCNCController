@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'splash_expand.ui'
+# Form implementation generated from reading ui file 'splash.ui'
 #
-# Created: Fri Mar  2 20:15:46 2018
+# Created: Wed Mar 14 07:27:30 2018
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -13,18 +13,16 @@ class Ui_Splash(object):
     def setupUi(self, Splash):
         Splash.setObjectName("Splash")
         Splash.resize(480, 320)
-        self.verticalLayout = QtGui.QVBoxLayout(Splash)
-        self.verticalLayout.setContentsMargins(-1, 20, -1, 20)
-        self.verticalLayout.setObjectName("verticalLayout")
         self.label = QtGui.QLabel(Splash)
+        self.label.setGeometry(QtCore.QRect(0, 110, 480, 71))
         font = QtGui.QFont()
         font.setFamily("FreeSans")
         font.setPointSize(20)
         self.label.setFont(font)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
-        self.verticalLayout.addWidget(self.label)
         self.AbortButton = QtGui.QPushButton(Splash)
+        self.AbortButton.setGeometry(QtCore.QRect(154, 189, 181, 71))
         font = QtGui.QFont()
         font.setFamily("FreeSans")
         font.setPointSize(27)
@@ -32,7 +30,6 @@ class Ui_Splash(object):
         font.setBold(False)
         self.AbortButton.setFont(font)
         self.AbortButton.setObjectName("AbortButton")
-        self.verticalLayout.addWidget(self.AbortButton)
 
         self.retranslateUi(Splash)
         QtCore.QMetaObject.connectSlotsByName(Splash)
