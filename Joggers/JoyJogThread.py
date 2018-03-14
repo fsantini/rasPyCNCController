@@ -22,6 +22,7 @@ import pygame.event
 import time
 import pycnc_config
 from AbstractJogger import AbstractJogger
+import math
 
 
 class JoyJogThread(PySide.QtCore.QThread, AbstractJogger):
@@ -50,11 +51,17 @@ class JoyJogThread(PySide.QtCore.QThread, AbstractJogger):
             xyz = self.joy.getXYZ()
             if xyz != (0, 0, 0):
                 # go slower in Z moves
-                if xyz[2] != 0:
-                    feed = pycnc_config.STD_FEED_Z
+                if xyz[2] != 0: # Z axis
+                    minFeed = pycnc_config.MIN_FEED_Z
+                    maxFeed = pycnc_config.MAX_FEED_Z
                 else:
-                    feed = pycnc_config.STD_FEED
+                    minFeed = pycnc_config.MIN_FEED
+                    maxFeed = pycnc_config.MAX_FEED
 
+                feed = minFeed + int(math.sqrt(xyz[0]**2 + xyz[1]**2 + xyz[2]**2)*(maxFeed-minFeed)/10)
+                #feed = int(math.sqrt(xyz[0]**2 + xyz[1]**2 + xyz[2]**2)*maxFeed)
+                if feed < minFeed: feed = minFeed
+                if feed > maxFeed: feed = maxFeed
                 # run command and wait for it to finish
 
                 #cmd = "G01 X%.3f Y%.3f Z%.3f F%d" % (xyz[0], xyz[1], xyz[2], feed)

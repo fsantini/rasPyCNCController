@@ -47,17 +47,17 @@ class KeyboardJogger(AbstractJogger):
         k = event.key()
 
         if k in pycnc_config.KEY_XPOS:
-            self.relative_move_event.emit([1, 0, 0], pycnc_config.STD_FEED)
+            self.relative_move_event.emit([1, 0, 0], pycnc_config.MAX_FEED)
         elif k in pycnc_config.KEY_XNEG:
-            self.relative_move_event.emit([-1, 0, 0], pycnc_config.STD_FEED)
+            self.relative_move_event.emit([-1, 0, 0], pycnc_config.MAX_FEED)
         elif k in pycnc_config.KEY_YPOS:
-            self.relative_move_event.emit([0, 1, 0], pycnc_config.STD_FEED)
+            self.relative_move_event.emit([0, 1, 0], pycnc_config.MAX_FEED)
         elif k in pycnc_config.KEY_YNEG:
-            self.relative_move_event.emit([0, -1, 0], pycnc_config.STD_FEED)
+            self.relative_move_event.emit([0, -1, 0], pycnc_config.MAX_FEED)
         elif k in pycnc_config.KEY_ZPOS:
-            self.relative_move_event.emit([0, 0, 1], pycnc_config.STD_FEED_Z)
+            self.relative_move_event.emit([0, 0, 1], pycnc_config.MAX_FEED_Z)
         elif k in pycnc_config.KEY_ZNEG:
-            self.relative_move_event.emit([0, 0, -1], pycnc_config.STD_FEED_Z)
+            self.relative_move_event.emit([0, 0, -1], pycnc_config.MAX_FEED_Z)
         elif k in pycnc_config.KEY_HOME:
             self.absolute_move_event.emit([0, 0, 0], None)
         elif k in pycnc_config.KEY_SETHOME:

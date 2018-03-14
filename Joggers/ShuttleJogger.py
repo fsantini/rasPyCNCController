@@ -24,12 +24,20 @@ class WheelEventThread(PySide.QtCore.QThread):
         while not self.killMe:
             if self.jogger.activeAxis != 0 and self.jogger.wheelStatus != 0:
                 if self.jogger.activeAxis == 3: # Z axis
-                    feed = pycnc_config.STD_FEED_Z
+                    minFeed = pycnc_config.MIN_FEED_Z
+                    maxFeed = pycnc_config.MAX_FEED_Z
                 else:
-                    feed = pycnc_config.STD_FEED
+                    minFeed = pycnc_config.MIN_FEED
+                    maxFeed = pycnc_config.MAX_FEED
 
                 xyz = [0.0,0.0,0.0]
                 xyz[self.jogger.activeAxis-1] = self.jogger.wheelStatus
+
+                feed = minFeed + int(math.sqrt(xyz[0]**2 + xyz[1]**2 + xyz[2]**2)*(maxFeed-minFeed)/10)
+                #feed = int(math.sqrt(xyz[0] ** 2 + xyz[1] ** 2 + xyz[2] ** 2) * minFeed)
+                if feed < minFeed: feed = minFeed
+                if feed > maxFeed: feed = maxFeed
+
                 self.jogger.relative_move_event.emit(xyz, feed)
                 time.sleep(float(pycnc_config.BTN_REPEAT) / 1000.0) # limit events to 1 each BTN_REPEAT
 

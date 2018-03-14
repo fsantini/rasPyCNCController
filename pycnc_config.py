@@ -20,6 +20,10 @@ JOG_SHUTTLE_ENABLED = True
 # standard feed rates used for jogging the machine
 STD_FEED=2000
 STD_FEED_Z=1000
+MIN_FEED = 2000
+MAX_FEED = 4000
+MIN_FEED_Z = 1000
+MAX_FEED_Z = 1000
 
 # GCodeLoader
 G0_FEED = 5000 # feed rate for G0. Default value that should get overwritten by the config
