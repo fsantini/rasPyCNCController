@@ -1,8 +1,9 @@
-rasPyCNCController
+
+rasPyCNC
 ==========
 A simple CNC (Grbl) gcode sender designed tob e used on a 480x320 touchscreen and a joypad.
 
-**Note: This release is yet not thoroughly tested. Please use at your own risk! Soon a tested release will be uploaded**
+**Note: This release is yet not thoroughly tested. Please use at your own risk!**
 
 Requirements
 ------------
@@ -15,6 +16,7 @@ Moreover, python 2.7 is required with the following additional modules:
  - PyGame
  - PySerial
  - PySide (and Qt libraries)
+ - evdev (for shuttleXpress)
 
 For better performance, PyGame can be patched to avoid echoing the joystick commands, but this is not necessary. See https://bitbucket.org/pygame/pygame/pull-requests/6/fixed-joystick-debug-printouts/diff
 
@@ -26,7 +28,7 @@ Starting the program
 
 The program is started by the following command line:
 
-    python cncController.py [-f] [-d]
+    python raspyCNC.py [-f] [-d]
 
 The following command-line options can be used:
 
@@ -40,7 +42,7 @@ When first started, the program will look for a serial connection to a CNC machi
 
 ![JogWidget start screen](http://fsantini.github.com/rasPyCNCController/doc_images/jogwidget_noLoad.jpg)
 
-From this screen, the machine position can be controlled and the origin set. The position is exclusively controlled by the joypad, with the following button mapping:
+From this screen, the machine position can be controlled and the origin set. The position is  controlled by the joypad, with the following button mapping:
 
 
 ![JogWidget button mapping](http://fsantini.github.com/rasPyCNCController/doc_images/jogScheme.jpg)
@@ -78,11 +80,47 @@ The program is designed to work with a joypad. However, jog commands using a num
  
 You can also write your own joggers to support more devices. Please see the Joggers/AbstractJogger.py file for more instructions.
 
+ShuttleXpress support
+--------
+
+RasPyCNC now supports the ShuttleXpress jogger too. Please notice that this is only available under Linux because it requires the evdev system.
+The device can be used to jog the machine by keeping one of the axis buttons pressed (first three buttons, see below) and **at the same time** rotating the encoder or the wheel. Rotating the encoder or the wheel alone will do nothing.
+Pressing one of the axis buttons together with the forth button will set the work coordinate to zero for that axis.
+Finally, the fifth button changes the step size of the rotary encoder, cycling through 1, 0.1 and 10mm steps.
+![ShuttleXpress description](http://fsantini.github.com/rasPyCNCController/doc_images/jogShuttle_scheme.png)
+
 Host Commands
 --------
 
 The software supports the host command `@pause`, which can be prefixed by a `;` or enclosed in parentheses (`(@pause)`), in the running GCode to insert a pause in the execution of the program.
 
+Probing
+--------
+This is an exciting new feature especially thought for PCB milling. It can be (de)activated in the configuration file.
+In order to use this feature, an electrical touch probe must be attached to your machine, [like this one](https://www.shapeoko.com/forum/viewtopic.php?f=4&t=6444&p=50333#p50331).
+If the functionality is activated, two extra buttons appear in the jog page:
+![JogWidget with probe](http://fsantini.github.com/rasPyCNCController/doc_images/screenshot_with_probe.png)
+
+The **Z Probe** functionality tests the Z height in a single point and sets the working Z coordinate at the touch point.
+The **Grid Probe** functionality is activated when a file is loaded. It runs a series of Z probes over the whole working area (defined as the bounding box, rounded up to the nearest 10mm, so make sure you have enough space!). The Z offsets are stored and then during the job, the Z value is constantly adjusted to keep a constant cutting depth.
+**Please note**: At the moment the Z adjustment only works in metric units and absolute movements!
+
+Example PCB Milling workflow
+--------
+The following is an example of the workflow used to etch/mill a single sided PCB board with this software.
+
+ 1. Design the PCB and convert it into GCode with Eagle/pcb_gcode or pcb2gcode.
+ 2. Place the board on the milling machine.
+ 3. Load the etching gcode file.
+ 4. Zero the machine on where etching should start.
+ 5. Connect the probe and run a *Grid Probe*.
+ 6. Disconnect the probe.
+ 7. Run the etching job. The commands will be automatically adjusted to the board geometry.
+ 8. Remove the etching bit and place the drilling bit.
+ 9. Load the drilling GCode file.
+ 10. Connect the probe and run a *Z Probe* to account for the different bit length.
+ 11. Run the drilling job.
+ 12. Repeat for milling etc.
 
 Configuration
 ------------
@@ -91,6 +129,7 @@ The application can be configured by modifying the `cnc_config.py` file. Many as
 
  - Serial port and baud rate
  - Joypad button mappings (note that the buttons start from 0, so button 1 is defined as 0 in the configuration)
+ - Jog parameters
 
 The configuration allows the definition of a standard G0 feed rate for the calculation of estimated time; however, the program will attempt to read the actual value from the Grbl configuration at runtime.
 
