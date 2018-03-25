@@ -140,7 +140,7 @@ The software is designed to run on a Raspberry Pi and a 480x320 touchscreen. Sma
 
 In order to make it pretty, I used a 3D-printed case that can be found [here](http://www.thingiverse.com/thing:1229473).
 
-A ready-made image for a RPi2 can be downloaded from [my website](http://www.francescosantini.com/threed.html).
+A ready-made image for a RPi2 can be downloaded from the releases section.
 
 Here's a picture of my setup:
 
