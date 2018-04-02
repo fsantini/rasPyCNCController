@@ -192,6 +192,7 @@ class GrblWriter(QObject):
         self.zCompensation = None
         self.doZCompensation = False
         self.restoreWorkCoords = False
+        self.checkMode = False
 
     # this will actually connect to Grbl
     def open(self):
@@ -199,6 +200,8 @@ class GrblWriter(QObject):
         grbl_paths = glob.glob(pycnc_config.SERIAL_PATTERN)
         if not grbl_paths:
             return False # Device not existing
+
+        self.checkMode = False
 
         try:
             self.serial = serial.Serial(grbl_paths[0], pycnc_config.BAUD, timeout=5, dsrdtr=True)
@@ -244,6 +247,28 @@ class GrblWriter(QObject):
                 self.do_command("G53 G0 X%.3f Y%.3f" % (oldMachineCoords[0], oldMachineCoords[1]))
                 self.do_command("G53 G0 Z%.3f" % (oldMachineCoords[2]))
                 self.do_command("G10 P0 L20 X%.3f Y%.3f Z%.3f" % oldWorkCoords)
+
+
+    def set_check_mode(self, checkMode):
+        if self.checkMode != checkMode:
+            self.do_command('$C')
+            self.checkMode = checkMode
+            time.sleep(0.5)
+            self.serial.flushInput()
+
+    def check_gcode_line(self, line):
+        if not self.checkMode:
+            self.set_check_mode(True)
+
+        self.serial.flushInput()
+        self.serial.write(line + '\n')
+        while True:
+            res = self.serial.readline()
+            r = res.lower()
+            if 'ok' in r:
+                return True, None
+            if 'error' in r or 'alarm' in r:
+                return False, res
 
 
 

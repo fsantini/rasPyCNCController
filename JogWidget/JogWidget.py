@@ -22,6 +22,7 @@ import time
 
 from PySide.QtCore import *
 from PySide.QtGui import *
+import re
 
 from Joggers.JoyJogThread import JoyJogThread
 from Joggers.KeyboardJogger import KeyboardJogger
@@ -29,6 +30,8 @@ from Joggers.ShuttleJogger import ShuttleJogger
 from gcode.GCodeLoader import GCodeLoader
 from gcode.JogHelper import JogHelper
 from jogWidget_ui import Ui_joyWidget
+from gcode.GCodeRunner import truncateGCode
+from gcode.GrblErrors import GrblErrorDict
 
 from string_format import config_string_format
 
@@ -161,7 +164,63 @@ class JogWidget(Ui_joyWidget, QWidget):
         self.BBOxGroup.setEnabled(True)
         self.estTimeGroup.setEnabled(True)
         self.fileLabel.setText(os.path.basename(self.loader.file))
+        self.fileLabel.setStyleSheet('')
         self.GridProbeButton.setEnabled(True)
+        if pycnc_config.CHECK_GCODE:
+            self.checkGCode()
+
+    def checkGCode(self):
+        if 'raspycnc checked' in self.gcode[-1].lower():
+            # file was already checked
+            return
+        res = QMessageBox.question(self, "Check GCode", "GCode file was never checked. Run it in check mode?", QMessageBox.Yes | QMessageBox.No)
+        if res == QMessageBox.No:
+            return
+
+        progress = QProgressDialog("GCode checking in progress...", "Cancel", 0, len(self.gcode)-1)
+        progress.setWindowModality(Qt.WindowModal)
+
+        # check gcode
+        for lnum in range(len(self.gcode)):
+            QApplication.processEvents()
+            ok, err = self.grblWriter.check_gcode_line(truncateGCode(self.gcode[lnum]))
+            if not ok:
+                message = "Error in GCode at line\n#%d: %s\n%s" % (lnum + 1, self.gcode[lnum].strip(), err.strip())
+                m = re.search('error:\s*([0-9]+)', err)
+                if m is not None:
+                    errno = int(m.group(1))
+                    if errno in GrblErrorDict:
+                        errmsg = GrblErrorDict[errno]
+                        message += '\n' + errmsg
+                res = QMessageBox.critical(self, "GCode error", message, QMessageBox.Abort | QMessageBox.Ignore)
+                if res == QMessageBox.Ignore:
+                    ok = True
+                else:
+                    break
+            progress.setValue(lnum)
+            if progress.wasCanceled():
+                break
+
+        progress.close()
+        self.grblWriter.set_check_mode(False) # get out of check mode
+
+        if lnum == len(self.gcode)-1 and ok:
+            # all ok
+            with open(self.file, 'a') as f:
+                f.write('\n(raspycnc checked)\n')
+            QMessageBox.information(self, "GCode checked", "All OK")
+            return
+        elif lnum < len(self.gcode)-1 and ok:
+            # operation was canceled
+            QMessageBox.warning(self, "Operation canceled", "Checking was canceled")
+            return
+        elif not ok:
+            QMessageBox.critical(self, "GCode error", "Error in GCode")
+            self.fileLabel.setStyleSheet('background-color: red;')
+
+
+
+
 
     def loadError(self, err):
         self.fileLabel.setText("Error loading: %s" % err)

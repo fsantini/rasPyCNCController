@@ -104,7 +104,7 @@ class GCodeRunner(QThread):
 
             ack, lineIn = self.grblWriter.ack_received()
 
-            if 'error' in lineIn or 'ALARM' in lineIn:
+            if lineIn is not None and ('error' in lineIn or 'ALARM' in lineIn):
                 errorStatus = True
                 break
 
