@@ -33,7 +33,7 @@
 # included in all copies or substantial portions of the Software.
 
 from PySide.QtCore import *
-from PySide.QtGui import QApplication
+from PySide.QtGui import QApplication, QMessageBox
 from GCodeAnalyzer import GCodeAnalyzer
 import serial
 import time
@@ -179,6 +179,7 @@ class GrblWriter(QObject):
 
     position_updated = Signal(object)
     probe_error = Signal()
+    grbl_error = Signal(object)
 
     def __init__(self):
         QObject.__init__(self)
@@ -203,17 +204,48 @@ class GrblWriter(QObject):
             self.serial = serial.Serial(grbl_paths[0], pycnc_config.BAUD, timeout=5, dsrdtr=True)
             if pycnc_config.SERIAL_DEBUG:
                 redefineSerialRW(self.serial) # this is to debug communication!
-            self.serial.write("\r\n")
-            time.sleep(1)
+            self.serial.write("\r\n\x18")
+            grblLine = self.serial.readline()
+            while 'Grbl' not in grblLine:
+                grblLine = self.serial.readline()
+                time.sleep(0.1)
+            time.sleep(0.5)
             self.serial.flushInput()
-            self.load_config()
+            self.load_config(grblLine)
         except:
             # serial port could not be opened
             return False
-        self.analyzer.Reset()
-        self.analyzer.fastf = self.g0_feed
+
+        if self.config[22] == 1: # homing is enabled. A homing cycle needs to be performed.
+            self.do_homing()
+        else:
+            self.analyzer.Reset()
+            self.analyzer.fastf = self.g0_feed
         # everything OK
         return True
+
+    def do_homing(self):
+        res = QMessageBox.information(None, "Homing", "Press OK to start the homing cycle", QMessageBox.Ok)
+        if res != QMessageBox.Ok:
+            return
+
+        oldMachineCoords = self.analyzer.getMachineXYZ()
+        oldWorkCoords = self.analyzer.getWorkXYZ()
+
+        self.do_command("$H")
+        self.analyzer.Reset()
+        self.analyzer.fastf = self.g0_feed
+        self.analyzer.syncStatusWithGrbl(self.get_status()) # read the actual position from grbl
+        self.do_command("G92 X0 Y0 Z0") # this is actually mostly for the analyzer. Work positions are reset to 0 after home, even if physical coords are not 0
+
+        if any(oldMachineCoords) != 0:
+            res = QMessageBox.information(None, "Restore coords", "Restore previous coordinates?", QMessageBox.Yes | QMessageBox.No)
+            if res == QMessageBox.Yes:
+                self.do_command("G53 G0 X%.3f Y%.3f" % (oldMachineCoords[0], oldMachineCoords[1]))
+                self.do_command("G53 G0 Z%.3f" % (oldMachineCoords[2]))
+                self.do_command("G92 X%.3f Y%.3f Z%.3f" % oldWorkCoords)
+
+
 
 
     def reset(self):
@@ -222,7 +254,7 @@ class GrblWriter(QObject):
         self.position_updated.emit([0,0,0])
         return self.open()
 
-    def read_response(self, until="ok"):
+    def read_response(self, until="ok", ignoreInitialize = False):
         """
             read lines from the grbl until the expected matching line appears
             (usually "ok"), or just the first line if until is None.
@@ -234,10 +266,12 @@ class GrblWriter(QObject):
                 QApplication.processEvents()
             line = self.serial.readline().strip()
             #print "Received line:", line
-            if line.startswith("error:"):
+            if line.startswith("error:") or line.startswith("ALARM:"):
+                self.analyzer.undo()
+                self.grbl_error.emit(line)
                 break
 
-            if line.startswith("Grbl"):
+            if not ignoreInitialize and line.startswith("Grbl"):
                 # a spontaneous reset is detected?
                 # restore work coordinates
                 self.do_command("G92 X%.4f Y%.4f Z%.4f" % (self.analyzer.x, self.analyzer.y, self.analyzer.z))
@@ -268,7 +302,7 @@ class GrblWriter(QObject):
                 response = self.read_response()
         return response
 
-    def do_command(self, gcode, wait=False):
+    def do_command(self, gcode, wait=False, initCommand=False):
         """
             send the command to grbl, read the response and return it.
             if wait=True, wait for the stepper motion to complete before returning.
@@ -288,7 +322,7 @@ class GrblWriter(QObject):
             response = self.do_compensated_move(lastMoveCommand)
         else: #business as usual
             self.serial.write(command + '\n')
-            response = self.read_response()
+            response = self.read_response(ignoreInitialize=initCommand)
         if wait:
             self.wait_motion()
 
@@ -332,7 +366,9 @@ class GrblWriter(QObject):
             self.restoreWorkCoords = True
             return False, line
 
-        if line.startswith("error:"):
+        if line.startswith("error:") or line.startswith("ALARM:"):
+            self.analyzer.undo()
+            self.grbl_error.emit(line)
             self.waitAck -= 1
             if self.waitAck == 0:
                 return True, line
@@ -373,10 +409,16 @@ class GrblWriter(QObject):
         # self.serial.write("G4 P0\n")
 
 
-    def load_config(self):
+    def load_config(self, grblLine=None):
         # query GRBL for the configuration
-        conf = self.do_command("$$")
+        conf = self.do_command("$$", initCommand=True)
         self.config = {}
+        if grblLine is not None:
+            # this is the Grbl welcome message
+            m = re.search('Grbl ([0-9]+)\.([0-9]+)(.?)', grblLine)
+            self.config['Major'] = int(m.group(1))
+            self.config['Minor'] = int(m.group(2))
+            self.config['Revision'] = m.group(3)
         for confLine in conf.split("\n"):
             key,val = readConfigLine(confLine)
             if key is not None:
@@ -416,27 +458,59 @@ class GrblWriter(QObject):
         res = self.read_response(None) # read one line
         # status is: <Idle,MPos:10.000,-5.000,2.000,WPos:0.000,0.000,0.000,Buf:0,RX:0,Ln:0,F:0.>
         #get machine and work pos
-        m = re.match("<([^,]+),MPos:([-.0-9]+),([-.0-9]+),([-.0-9]+),WPos:([-.0-9]+),([-.0-9]+),([-.0-9]+),.*>", res)
-        if m is None:
-            return None
-        status = { 'status': m.group(1),
-                   'machine': ( float(m.group(2)), float(m.group(3)), float(m.group(4)) ),
-                   'work':    ( float(m.group(5)), float(m.group(6)), float(m.group(7)) ) }
+        # Grbl 1.1 only gives either machine or work pos!
+        m = re.search('MPos:([-.0-9]+),([-.0-9]+),([-.0-9]+)', res)
+        if m is not None:
+            status = {
+                'status': res,
+                'type': 'Machine',
+                'position': ( float(m.group(1)), float(m.group(2)), float(m.group(3)) )
+            }
+        else:
+            m = re.search('WPos:([-.0-9]+),([-.0-9]+),([-.0-9]+)', res)
+            if m is not None:
+                status = {
+                    'status': res,
+                    'type': 'Work',
+                    'position': (float(m.group(1)), float(m.group(2)), float(m.group(3)))
+                }
+            else:
+                return None # error in reading status
 
         return status
 
-    def parse_probe_response(self, response):
-        status = self.get_status()
-        machineOffsetX = status['work'][0] - status['machine'][0]
-        machineOffsetY = status['work'][1] - status['machine'][1]
-        machineOffsetZ = status['work'][2] - status['machine'][2]
-        lines = response.split('\n')
-        for line in lines:
-            print "Parsing probe response: ",line
-            m = re.match("\[PRB:([-0-9.]+),([-0-9.]+),([-0-9.]+):[01]+\]", line)
-            if m:
-                return float(m.group(1))+machineOffsetX, float(m.group(2))+machineOffsetY, float(m.group(3))+machineOffsetZ
-        return None, None, None
+    def do_probe(self):
+        initial_status = self.get_status()
+        probeResponse = self.do_command("G38.2 Z%.3f F%.3f" % (-math.fabs(pycnc_config.PROBING_DISTANCE),
+                                                               pycnc_config.PROBING_FEED))  # probe z
+
+        if 'ALARM' in probeResponse:
+            self.probe_error.emit()
+            return None, None, None
+
+        end_status = self.get_status()
+
+        x = end_status['position'][0] - initial_status['position'][0]
+        y = end_status['position'][1] - initial_status['position'][1]
+        z = end_status['position'][2] - initial_status['position'][2]
+
+        print "Probe position:",x,y,z
+
+        return x,y,z
+
+    # this is not needed as it's not 100% Grbl1.1-compatible, as it relies on getting both the work and machine positions at the same time
+    # def parse_probe_response(self, response):
+    #     status = self.get_status()
+    #     machineOffsetX = status['work'][0] - status['machine'][0]
+    #     machineOffsetY = status['work'][1] - status['machine'][1]
+    #     machineOffsetZ = status['work'][2] - status['machine'][2]
+    #     lines = response.split('\n')
+    #     for line in lines:
+    #         print "Parsing probe response: ",line
+    #         m = re.match("\[PRB:([-0-9.]+),([-0-9.]+),([-0-9.]+):[01]+\]", line)
+    #         if m:
+    #             return float(m.group(1))+machineOffsetX, float(m.group(2))+machineOffsetY, float(m.group(3))+machineOffsetZ
+    #     return None, None, None
 
     def probe_z_offset(self):
         self.wait_motion()
@@ -444,14 +518,10 @@ class GrblWriter(QObject):
         self.doZCompensation = False
         self.do_command("G90") # absolute positioning
         self.do_command("G92 Z0") # set current z to 0
-        probeResponse = self.do_command("G38.2 Z%.3f F%.3f" % (-math.fabs(pycnc_config.PROBING_DISTANCE), pycnc_config.PROBING_FEED)) # probe z. TODO: remove hardcoding of coordinates/feed
-        # self.wait_motion() # maybe needed??
-        x,y,z = self.parse_probe_response(probeResponse)
-        if z is None:
-            self.probe_error.emit()
-            return None
+        x,y,z = self.do_probe()
         self.do_command("G92 Z0") # set Z=0 on piece
         self.doZCompensation = wasZComp # restore Z compensation
+
         return z
 
     def probe_grid(self, xRange, yRange, spacing):
@@ -465,11 +535,8 @@ class GrblWriter(QObject):
             # move to next probe point
             self.do_command("G0 Z" + str(safeZ)) # move to safe height
             self.do_command("G0 X" + str(probePoints[pointIndex][0]) + " Y" + str(probePoints[pointIndex][1])) # move to probe point
-            # self.wait_motion() # maybe needed?
-            probeResponse = self.do_command("G38.2 Z%.3f F%.3f" % (-math.fabs(pycnc_config.PROBING_DISTANCE), pycnc_config.PROBING_FEED))
-            x, y, z = self.parse_probe_response(probeResponse)
+            x, y, z = self.do_probe()
             if z is None:
-                self.probe_error.emit()
                 self.zCompensation = None
                 return False
             self.zCompensation.setZValue(pointIndex, z)

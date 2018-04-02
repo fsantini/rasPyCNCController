@@ -75,6 +75,7 @@ class MainWindow(QStackedWidget):
             self.grblWriter = GrblWriterBasic()
         else:
             self.grblWriter = GrblWriter()
+            self.grblWriter.grbl_error.connect(self.ask_perform_reset)
 
         # here wait for GRBL and show splash screen
         while not self.grblWriter.open():
@@ -148,6 +149,12 @@ class MainWindow(QStackedWidget):
             self.jogWidget.LoadButton.setText(self.jogWidget.LoadButton.originalText)
             self.jogWidget.run_event.connect(self.runFile)
             self.jogWidget.load_event.connect(self.loadFile)
+
+    def ask_perform_reset(self, errorLine):
+        res = QMessageBox.critical(self, "Grbl Error", "%s\nPerform reset?" % (errorLine),
+                                      QMessageBox.Yes | QMessageBox.No)
+        if res == QMessageBox.Yes:
+            self.grblWriter.reset()
 
     # don't need to generate the pause, this is called when the system is already paused
     def doPause(self, pauseFlag):

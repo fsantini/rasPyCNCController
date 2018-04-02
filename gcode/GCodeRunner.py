@@ -20,6 +20,7 @@ from PySide.QtCore import QThread, Signal
 import re
 import sys
 import time
+from PySide.QtGui import QApplication, QMessageBox
 
 def truncateGCode(gcode):
   def replace(match):
@@ -49,6 +50,12 @@ class GCodeRunner(QThread):
 
     def setGrbl(self, grblWriter):
         self.grblWriter = grblWriter
+        self.grblWriter.grbl_error.connect(self.grblError)
+
+    def grblError(self, errorMsg):
+        self.stopFlag = True
+        QMessageBox.critical(None, "Grbl Error", errorMsg)
+
 
     def setGcode(self, gcode):
         self.gcode = gcode
@@ -84,7 +91,11 @@ class GCodeRunner(QThread):
         self.grblWriter.do_command("G90")
         self.grblWriter.do_command("G21")
 
+        errorStatus = False
+
         while self.currentLine < totLines:
+
+            QApplication.processEvents()
 
             if (self.stopFlag):
                 self.grblWriter.reset()
@@ -92,6 +103,11 @@ class GCodeRunner(QThread):
                 return
 
             ack, lineIn = self.grblWriter.ack_received()
+
+            if 'error' in lineIn or 'ALARM' in lineIn:
+                errorStatus = True
+                break
+
             if not ack:
                 time.sleep(0.01)
                 continue

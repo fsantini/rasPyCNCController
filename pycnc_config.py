@@ -4,7 +4,7 @@ from PySide.QtCore import Qt
 
 SERIAL_PATTERN="/dev/ttyACM*"
 BAUD=115200
-SERIAL_DEBUG = False # define if serial communication should be shown
+SERIAL_DEBUG = True # define if serial communication should be shown
 
 # filelist
 # patterns for gcode files

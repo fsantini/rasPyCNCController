@@ -222,9 +222,11 @@ class GCodeAnalyzer():
         self.travel = 0
         self.time = 0  # time in minutes
 
+        self.moveInMachineCoords = False
+
     # undo one movement gcode command (does not affect bouding box)
     def undo(self):
-        if self.lastMovementGCode is None: return
+        #if self.lastMovementGCode is None: return
         self.x = self.lastX
         self.y = self.lastY
         self.z = self.lastZ
@@ -246,12 +248,17 @@ class GCodeAnalyzer():
                 # print "Analyze ", line
                 self.AnalyzeLine(self.converter.convert(line))  # handles grbl-style code
 
+        self.moveInMachineCoords = False # this flag gets reset at the end of the gcode line
+
     def AnalyzeLine(self, gcode):
         self.lastMovementGCode = None  # by default, the move was not a g[0-3]; set it differently in case of actual movement gcode
 
         gcode = gcode.lstrip();
         if gcode.startswith("@"): return  # code is a host command
+
         code_g = findCode(gcode, "G")
+        if '$H' in gcode:
+            code_g = str(28) # this is a homing command equivalent to g28
         code_m = findCode(gcode, "M")
         # we have a g_code
         if code_g != None:
@@ -280,6 +287,18 @@ class GCodeAnalyzer():
                 code_y = findCode(gcode, "Y")
                 code_z = findCode(gcode, "Z")
                 code_e = findCode(gcode, "E")
+
+                if self.moveInMachineCoords: # convert the machine coords move to work coords
+                    print "Move is in machine coords!"
+                    if code_x is not None:
+                        code_x = safeFloat(code_x) + self.xOffset
+
+                    if code_y is not None:
+                        code_y = safeFloat(code_y) + self.yOffset
+
+                    if code_y is not None:
+                        code_z = safeFloat(code_z) + self.zOffset
+
 
                 code_i = findCode(gcode, "I")
                 code_j = findCode(gcode, "J")
@@ -313,9 +332,9 @@ class GCodeAnalyzer():
                             self.e += e
                 else:
                     # absolute coordinates
-                    if code_x != None: self.x = self.xOffset + safeFloat(code_x) * metricConv
-                    if code_y != None: self.y = self.yOffset + safeFloat(code_y) * metricConv
-                    if code_z != None: self.z = self.zOffset + safeFloat(code_z) * metricConv
+                    if code_x != None: self.x =  safeFloat(code_x) * metricConv
+                    if code_y != None: self.y =  safeFloat(code_y) * metricConv
+                    if code_z != None: self.z =  safeFloat(code_z) * metricConv
                     if code_e != None:
                         e = safeFloat(code_e) * metricConv
                         if self.eRelative:
@@ -388,28 +407,30 @@ class GCodeAnalyzer():
                 if code_e != None:
                     self.eOffset = 0
                     self.e = 0
-            elif code_g == 162:
-                self.lastX = self.x
-                self.lastY = self.y
-                self.lastZ = self.z
-                self.lastE = self.e
-                code_x = findCode(gcode, "X")
-                code_y = findCode(gcode, "Y")
-                code_z = findCode(gcode, "Z")
-                homeAll = False
-                if code_x == None and code_y == None and code_z == None: homeAll = True
-                if code_x != None or homeAll:
-                    self.hasHomeX = True
-                    self.xOffset = 0
-                    self.x = self.axisMaxX
-                if code_y != None or homeAll:
-                    self.hasHomeY = True
-                    self.yOffset = 0
-                    self.y = self.axisMaxY
-                if code_z != None or homeAll:
-                    self.hasHomeZ = True
-                    self.zOffset = 0
-                    self.z = self.axisMaxZ
+            # elif code_g == 162:
+            #     self.lastX = self.x
+            #     self.lastY = self.y
+            #     self.lastZ = self.z
+            #     self.lastE = self.e
+            #     code_x = findCode(gcode, "X")
+            #     code_y = findCode(gcode, "Y")
+            #     code_z = findCode(gcode, "Z")
+            #     homeAll = False
+            #     if code_x == None and code_y == None and code_z == None: homeAll = True
+            #     if code_x != None or homeAll:
+            #         self.hasHomeX = True
+            #         self.xOffset = 0
+            #         self.x = self.axisMaxX
+            #     if code_y != None or homeAll:
+            #         self.hasHomeY = True
+            #         self.yOffset = 0
+            #         self.y = self.axisMaxY
+            #     if code_z != None or homeAll:
+            #         self.hasHomeZ = True
+            #         self.zOffset = 0
+            #         self.z = self.axisMaxZ
+            elif code_g == 53:
+                self.moveInMachineCoords = True
             elif code_g == 90:
                 self.relative = False
             elif code_g == 91:
@@ -419,6 +440,8 @@ class GCodeAnalyzer():
                 code_y = findCode(gcode, "Y")
                 code_z = findCode(gcode, "Z")
                 code_e = findCode(gcode, "E")
+
+                current_machine_coords = self.getMachineXYZ()
 
                 if code_x != None:
                     self.x = safeFloat(code_x) * metricConv
@@ -431,6 +454,13 @@ class GCodeAnalyzer():
 
                 if code_e != None:
                     self.e = safeFloat(code_e) * metricConv
+
+                #redefine offsets x = machine_x + offset => offset = x - machine_x
+                self.xOffset = self.x - current_machine_coords[0]
+                self.yOffset = self.y - current_machine_coords[1]
+                self.zOffset = self.z - current_machine_coords[2]
+
+
 
                 # the following code is correct for 3D printers and Marlin. With Grbl, the position is factually redefined
                 # if code_x != None:
@@ -453,6 +483,21 @@ class GCodeAnalyzer():
                 self.eRelative = True
 
     #    self.print_status()
+
+    def getMachineXYZ(self):
+        return self.x - self.xOffset, self.y - self.yOffset, self.z - self.zOffset
+
+    def getWorkXYZ(self):
+        return self.x, self.y, self.z
+
+    def syncStatusWithGrbl(self, grblStatus):
+        if grblStatus['type'] == 'Work':
+            self.x, self.y, self.z = grblStatus['position']
+        else:
+            self.x = grblStatus['position'][0] + self.xOffset
+            self.y = grblStatus['position'][0] + self.yOffset
+            self.z = grblStatus['position'][0] + self.zOffset
+
 
     def getBoundingBox(self):
         return (self.minX, self.minY, self.minZ), (self.maxX, self.maxY, self.maxZ)
