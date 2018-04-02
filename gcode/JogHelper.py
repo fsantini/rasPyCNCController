@@ -123,7 +123,7 @@ class JogHelper(QObject):
 
     def home_update(self, xyz):
         if self.grblWriter is None: return
-        cmd = "G92"
+        cmd = "G10 P0 L20"
         if xyz[0] is not None:
             cmd += " X%.1f" % xyz[0]
         if xyz[1] is not None:

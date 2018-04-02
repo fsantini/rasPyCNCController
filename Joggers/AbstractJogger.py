@@ -36,7 +36,7 @@ class AbstractJogger(QObject):
 
     relative_move_event = Signal(object,object) # a G0/G1 command
     absolute_move_event = Signal(object,object)
-    home_update_event = Signal(object) # a G92 command. argument is the offset
+    home_update_event = Signal(object) # a G10 P0 L20 command. argument is the offset
     exit_event = Signal(object)
     error_event = Signal(object)
 

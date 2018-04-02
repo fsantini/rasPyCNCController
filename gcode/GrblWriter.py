@@ -236,14 +236,14 @@ class GrblWriter(QObject):
         self.analyzer.Reset()
         self.analyzer.fastf = self.g0_feed
         self.analyzer.syncStatusWithGrbl(self.get_status()) # read the actual position from grbl
-        self.do_command("G92 X0 Y0 Z0") # this is actually mostly for the analyzer. Work positions are reset to 0 after home, even if physical coords are not 0
+        self.do_command("G10 P0 L20 X0 Y0 Z0") # this is actually mostly for the analyzer. Work positions are reset to 0 after home, even if physical coords are not 0
 
         if any(oldMachineCoords) != 0:
             res = QMessageBox.information(None, "Restore coords", "Restore previous coordinates?", QMessageBox.Yes | QMessageBox.No)
             if res == QMessageBox.Yes:
                 self.do_command("G53 G0 X%.3f Y%.3f" % (oldMachineCoords[0], oldMachineCoords[1]))
                 self.do_command("G53 G0 Z%.3f" % (oldMachineCoords[2]))
-                self.do_command("G92 X%.3f Y%.3f Z%.3f" % oldWorkCoords)
+                self.do_command("G10 P0 L20 X%.3f Y%.3f Z%.3f" % oldWorkCoords)
 
 
 
@@ -274,7 +274,7 @@ class GrblWriter(QObject):
             if not ignoreInitialize and line.startswith("Grbl"):
                 # a spontaneous reset is detected?
                 # restore work coordinates
-                self.do_command("G92 X%.4f Y%.4f Z%.4f" % (self.analyzer.x, self.analyzer.y, self.analyzer.z))
+                self.do_command("G10 P0 L20 X%.4f Y%.4f Z%.4f" % (self.analyzer.x, self.analyzer.y, self.analyzer.z))
                 break
 
             result.append(line)
@@ -380,7 +380,7 @@ class GrblWriter(QObject):
             if self.waitAck == 0:
                 if self.restoreWorkCoords: # coordinates need to be restored
                     print "Restoring work coordinates"
-                    self.do_command("G92 X%.4f Y%.4f Z%.4f" % (self.analyzer.x, self.analyzer.y, self.analyzer.z))
+                    self.do_command("G10 P0 L20 X%.4f Y%.4f Z%.4f" % (self.analyzer.x, self.analyzer.y, self.analyzer.z))
                     self.restoreWorkCoords = False
 
                 return True, line
@@ -517,9 +517,9 @@ class GrblWriter(QObject):
         wasZComp = self.doZCompensation
         self.doZCompensation = False
         self.do_command("G90") # absolute positioning
-        self.do_command("G92 Z0") # set current z to 0
+        self.do_command("G10 P0 L20 Z0") # set current z to 0
         x,y,z = self.do_probe()
-        self.do_command("G92 Z0") # set Z=0 on piece
+        self.do_command("G10 P0 L20 Z0") # set Z=0 on piece
         self.doZCompensation = wasZComp # restore Z compensation
 
         return z
