@@ -31,7 +31,7 @@ from gcode.GCodeLoader import GCodeLoader
 from gcode.JogHelper import JogHelper
 from jogWidget_ui import Ui_joyWidget
 from gcode.GCodeRunner import truncateGCode
-from gcode.GrblErrors import GrblErrorDict
+from gcode.GrblWriter import showGrblErrorMessageBox
 
 from string_format import config_string_format
 
@@ -185,15 +185,8 @@ class JogWidget(Ui_joyWidget, QWidget):
             QApplication.processEvents()
             ok, err = self.grblWriter.check_gcode_line(truncateGCode(self.gcode[lnum]))
             if not ok:
-                message = "Error in GCode at line\n#%d: %s\n%s" % (lnum + 1, self.gcode[lnum].strip(), err.strip())
-                m = re.search('error:\s*([0-9]+)', err)
-                if m is not None:
-                    errno = int(m.group(1))
-                    if errno in GrblErrorDict:
-                        errmsg = GrblErrorDict[errno]
-                        message += '\n' + errmsg
-                res = QMessageBox.critical(self, "GCode error", message, QMessageBox.Abort | QMessageBox.Ignore)
-                if res == QMessageBox.Ignore:
+                if showGrblErrorMessageBox(self, lnum, self.gcode[lnum], err):
+                    # if true, ignore
                     ok = True
                 else:
                     break

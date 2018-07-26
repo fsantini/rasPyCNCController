@@ -44,7 +44,22 @@ from bisect import bisect_left, bisect_right
 import types
 
 import pycnc_config
+from gcode.GrblErrors import GrblErrorDict
 
+
+def showGrblErrorMessageBox(widget, lnum, line, err):
+    message = "Error in GCode at line\n#%d: %s\n%s" % (lnum + 1, line.strip(), err.strip())
+    m = re.search('error:\s*([0-9]+)', err)
+    if m is not None:
+        errno = int(m.group(1))
+        if errno in GrblErrorDict:
+            errmsg = GrblErrorDict[errno]
+            message += '\n' + errmsg
+    res = QMessageBox.critical(widget, "GCode error", message, QMessageBox.Abort | QMessageBox.Ignore)
+    if res == QMessageBox.Ignore:
+        return True
+    else:
+        return False
 
 def redefineSerialRW(serialInstance):
     oldWrite = serialInstance.write

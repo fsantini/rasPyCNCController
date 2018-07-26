@@ -22,6 +22,9 @@ import sys
 import time
 from PySide.QtGui import QApplication, QMessageBox
 
+from gcode.GrblWriter import showGrblErrorMessageBox
+
+
 def truncateGCode(gcode):
   def replace(match):
 	match = match.group(2)
@@ -104,9 +107,14 @@ class GCodeRunner(QThread):
 
             ack, lineIn = self.grblWriter.ack_received()
 
-            if lineIn is not None and ('error' in lineIn or 'ALARM' in lineIn):
-                errorStatus = True
+            if lineIn is not None and 'ALARM' in lineIn:
+                errorStatus = True # cannot recover an alarm
                 break
+
+            if lineIn is not None and 'error' in lineIn:
+                if not showGrblErrorMessageBox(self, self.currentLine, self.gcode[self.currentLine], lineIn):
+                    errorStatus = True
+                    break
 
             if not ack:
                 time.sleep(0.01)
