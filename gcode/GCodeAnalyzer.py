@@ -490,13 +490,12 @@ class GCodeAnalyzer():
     def getWorkXYZ(self):
         return self.x, self.y, self.z
 
-    def syncStatusWithGrbl(self, grblStatus):
-        if grblStatus['type'] == 'Work':
-            self.x, self.y, self.z = grblStatus['position']
-        else:
-            self.x = grblStatus['position'][0] + self.xOffset
-            self.y = grblStatus['position'][0] + self.yOffset
-            self.z = grblStatus['position'][0] + self.zOffset
+    def syncStatusWithGrbl(self, grblMachineStatus, grblWorkStatus):
+        self.x, self.y, self.z = grblWorkStatus['position']
+
+        self.xOffset = grblWorkStatus['position'][0] - grblMachineStatus['position'][0]
+        self.yOffset = grblWorkStatus['position'][1] - grblMachineStatus['position'][1]
+        self.zOffset = grblWorkStatus['position'][2] - grblMachineStatus['position'][2]
 
 
     def getBoundingBox(self):

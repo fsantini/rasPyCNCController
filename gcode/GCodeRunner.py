@@ -101,7 +101,7 @@ class GCodeRunner(QThread):
             QApplication.processEvents()
 
             if (self.stopFlag):
-                self.grblWriter.reset()
+                self.grblWriter.close()
                 self.stop_event.emit()
                 return
 

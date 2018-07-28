@@ -47,6 +47,15 @@ import pycnc_config
 from gcode.GrblErrors import GrblErrorDict
 
 
+def suppressGCode(gcodeLine, toSuppress):
+    gcodefinder = re.compile(toSuppress + '(?![0-9.])[^MG]*', re.I) # suppress M6 but not M66, even when it's M6G0, for example
+    return gcodefinder.sub('', gcodeLine)
+
+def suppressAllInvalidGCodes(gcodeline):
+    for gcode in pycnc_config.SUPPRESS_GCODE:
+        gcodeline = suppressGCode(gcodeline, gcode)
+    return gcodeline
+
 def showGrblErrorMessageBox(widget, lnum, line, err):
     message = "Error in GCode at line\n#%d: %s\n%s" % (lnum + 1, line.strip(), err.strip())
     m = re.search('error:\s*([0-9]+)', err)
@@ -208,6 +217,7 @@ class GrblWriter(QObject):
         self.doZCompensation = False
         self.restoreWorkCoords = False
         self.checkMode = False
+        self.resetting = False
 
     # this will actually connect to Grbl
     def open(self):
@@ -253,15 +263,19 @@ class GrblWriter(QObject):
         self.do_command("$H")
         self.analyzer.Reset()
         self.analyzer.fastf = self.g0_feed
-        self.analyzer.syncStatusWithGrbl(self.get_status()) # read the actual position from grbl
-        self.do_command("G10 P0 L20 X0 Y0 Z0") # this is actually mostly for the analyzer. Work positions are reset to 0 after home, even if physical coords are not 0
+        machinePos, workPos = self.get_status(True)
+        print machinePos, workPos
+        self.analyzer.syncStatusWithGrbl(machinePos, workPos) # read the actual positions from grbl
 
-        if any(oldMachineCoords) != 0:
-            res = QMessageBox.information(None, "Restore coords", "Restore previous coordinates?", QMessageBox.Yes | QMessageBox.No)
+        if any([coord != 0 for coord in oldMachineCoords]):
+            res = QMessageBox.information(None, "Restore coords", "Move tool to previous position?", QMessageBox.Yes | QMessageBox.No)
             if res == QMessageBox.Yes:
                 self.do_command("G53 G0 X%.3f Y%.3f" % (oldMachineCoords[0], oldMachineCoords[1]))
                 self.do_command("G53 G0 Z%.3f" % (oldMachineCoords[2]))
                 self.do_command("G10 P0 L20 X%.3f Y%.3f Z%.3f" % oldWorkCoords)
+
+        self.position_updated.emit(self.analyzer.getPosition())
+
 
 
     def set_check_mode(self, checkMode):
@@ -272,6 +286,7 @@ class GrblWriter(QObject):
             self.serial.flushInput()
 
     def check_gcode_line(self, line):
+        line = suppressAllInvalidGCodes(line)
         if not self.checkMode:
             self.set_check_mode(True)
 
@@ -285,14 +300,20 @@ class GrblWriter(QObject):
             if 'error' in r or 'alarm' in r:
                 return False, res
 
-
-
+    def close(self):
+        if self.serial is None:
+            return
+        self.serial.close()
+        self.serial = None
+        self.position_updated.emit([0, 0, 0])
 
     def reset(self):
+        self.resetting = True
         print "Resetting!"
-        self.serial.close()
-        self.position_updated.emit([0,0,0])
-        return self.open()
+        self.close()
+        res = self.open()
+        self.resetting = False
+        return res
 
     def read_response(self, until="ok", ignoreInitialize = False):
         """
@@ -348,7 +369,7 @@ class GrblWriter(QObject):
             if wait=True, wait for the stepper motion to complete before returning.
         """
         # self.waitAck = 0 # only for nonblocking commands, so it should be false, but if we run a nonblocking command, and then a blocking one, the blocking might catch the previous ok
-        command = gcode.strip()
+        command = suppressAllInvalidGCodes(gcode.strip())
         if not command or command[0] == '(':
             return
 
@@ -372,7 +393,7 @@ class GrblWriter(QObject):
 
     def do_command_nonblock(self, gcode):
         # run a command but don't wait
-        command = gcode.strip()
+        command = suppressAllInvalidGCodes(gcode.strip())
         if not command or command[0] == '(':
             return
         self.waitAck += 1
@@ -493,31 +514,67 @@ class GrblWriter(QObject):
         if not self.storedPos['metric']:
             self.do_command("G20")
 
-    def get_status(self):
+    def get_status(self, getBothStatuses = False):
         self.serial.write('?') # no newline needed
         res = self.read_response(None) # read one line
         # status is: <Idle,MPos:10.000,-5.000,2.000,WPos:0.000,0.000,0.000,Buf:0,RX:0,Ln:0,F:0.>
         #get machine and work pos
         # Grbl 1.1 only gives either machine or work pos!
+
+        machineStatus = None
+        workStatus = None
+
         m = re.search('MPos:([-.0-9]+),([-.0-9]+),([-.0-9]+)', res)
         if m is not None:
-            status = {
+            machineStatus = {
                 'status': res,
                 'type': 'Machine',
                 'position': ( float(m.group(1)), float(m.group(2)), float(m.group(3)) )
             }
-        else:
-            m = re.search('WPos:([-.0-9]+),([-.0-9]+),([-.0-9]+)', res)
-            if m is not None:
-                status = {
-                    'status': res,
-                    'type': 'Work',
-                    'position': (float(m.group(1)), float(m.group(2)), float(m.group(3)))
-                }
-            else:
-                return None # error in reading status
+            if not getBothStatuses:
+                return machineStatus
 
-        return status
+        m = re.search('WPos:([-.0-9]+),([-.0-9]+),([-.0-9]+)', res)
+        if m is not None:
+            workStatus = {
+                'status': res,
+                'type': 'Work',
+                'position': (float(m.group(1)), float(m.group(2)), float(m.group(3)))
+            }
+            if not getBothStatuses:
+                return workStatus
+
+        # if both statuses are none here, then we had an error
+        if machineStatus is None and workStatus is None:
+            if getBothStatuses:
+                return None, None # we wanted both positions, so send two return values
+            else:
+                return None
+
+        # only executed if getBothPositions is True!! This makes the following recursion safe
+        # here it means that we want both positions. Find out which one we miss (if any). We are sure that we have at least one
+        if machineStatus is None:
+            # this means that we have Grbl1.1 and the status setting is "Work": switch to Machine
+            self.do_command("$10=1")
+            # get the other status
+            machineStatus = self.get_status(False)
+            self.do_command("$10=0")
+            if machineStatus is None:
+                return None, None # error
+            else:
+                return machineStatus, workStatus
+        elif workStatus is None:
+            # this means that we have Grbl1.1 and the status setting is "Work": switch to Machine
+            self.do_command("$10=0")
+            # get the other status
+            workStatus = self.get_status(False)
+            self.do_command("$10=1")
+            if workStatus is None:
+                return None, None  # error
+            else:
+                return machineStatus, workStatus
+        else:
+            return machineStatus, workStatus
 
     def do_probe(self):
         initial_status = self.get_status()

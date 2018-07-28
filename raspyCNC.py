@@ -151,6 +151,8 @@ class MainWindow(QStackedWidget):
             self.jogWidget.load_event.connect(self.loadFile)
 
     def ask_perform_reset(self, errorLine):
+        if self.grblWriter.resetting:
+            return
         res = QMessageBox.critical(self, "Grbl Error", "%s\nPerform reset?" % (errorLine),
                                       QMessageBox.Yes | QMessageBox.No)
         if res == QMessageBox.Yes:
@@ -221,6 +223,8 @@ class MainWindow(QStackedWidget):
 
     def grblError(self):
         # reset grbl
+        if self.grblWriter.resetting: # already resetting
+            return
         self.setCurrentWidget(self.splash)
         self.splash.setText("GRBL Error. Reconnecting...")
         QApplication.processEvents()

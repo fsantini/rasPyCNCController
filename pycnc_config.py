@@ -12,6 +12,10 @@ CHECK_GCODE = True # define if every new GCode file should be run in check mode 
 GCODE_PATTERN = ['.*\.nc', '.*\.ngc', '.*\.gc', '.*\.gcode']
 EXTRA_MOUNTPOINTS = [] # extra directories to show in the file list dialog
 
+# GCode options
+# unsupported gcode to silently remove
+SUPPRESS_GCODE = []
+
 # enabled joggers. If a jogger is not found, it is anyway disregarded. Should be safe leaving them on true
 JOG_KEYBOARD_ENABLED = True
 JOG_JOYPAD_ENABLED = True

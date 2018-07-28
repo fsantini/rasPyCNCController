@@ -150,6 +150,7 @@ class JogWidget(Ui_joyWidget, QWidget):
     def setGrbl(self, grblWriter):
         self.grblWriter = grblWriter
         self.grblWriter.position_updated.connect(self.setPosition)
+        self.setPosition(self.grblWriter.analyzer.getPosition())
         self.jogHelper.setGrbl(grblWriter)
 
     def fileLoaded(self):
@@ -275,6 +276,8 @@ class JogWidget(Ui_joyWidget, QWidget):
         self.estTimeTxt.setText("%02d:%02d:%02d" % (hours, mins, secs))
 
     def startJoggers(self):
+        if self.grblWriter.serial is None and not self.grblWriter.resetting: #if we come here from a stop, the writer is reset
+            self.grblWriter.open()
         for jogger in self.joggers:
             jogger.start()
 
