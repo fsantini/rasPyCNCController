@@ -62,6 +62,7 @@ class RunWidget(Ui_runWidget, QWidget):
         self.PauseButton.clicked.connect(self.pause)
         self.joy.event_pause.connect(self.pause)
         self.initElements()
+        self.running = False
 
 
     def initElements(self):
@@ -127,8 +128,17 @@ class RunWidget(Ui_runWidget, QWidget):
         self.runner.end_event.connect(lambda : self.stopJoy())
         self.runner.stop_event.connect(lambda : self.stopJoy())
 
+        self.runner.error_event.connect(lambda err: self.setRunning(False))
+        self.runner.pause_event.connect(lambda pauseFlag: self.setRunning(not pauseFlag))
+        self.runner.end_event.connect(lambda: self.setRunning(False))
+        self.runner.stop_event.connect(lambda: self.setRunning(False))
+
         self.runner.setGcode(gcode)
+        self.running = True
         self.runner.start()
+
+    def setRunning(self, runStatus):
+        self.running = runStatus
 
     def resetGrbl(self):
         self.runner.stop()
