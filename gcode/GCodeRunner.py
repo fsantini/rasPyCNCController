@@ -50,14 +50,17 @@ class GCodeRunner(QThread):
         self.pauseFlag = False
         self.currentLine = 0
         self.waitForPause = False
+        self.errorStatus = False
 
     def setGrbl(self, grblWriter):
         self.grblWriter = grblWriter
         self.grblWriter.grbl_error.connect(self.grblError)
 
     def grblError(self, errorMsg):
-        self.stopFlag = True
-        QMessageBox.critical(None, "Grbl Error", errorMsg)
+        self.errorStatus = True
+        if not showGrblErrorMessageBox(None, self.currentLine, self.gcode[self.currentLine], errorMsg):
+            self.stopFlag = True
+        self.errorStatus = False
 
 
     def setGcode(self, gcode):
@@ -107,14 +110,10 @@ class GCodeRunner(QThread):
 
             ack, lineIn = self.grblWriter.ack_received()
 
-            if lineIn is not None and 'ALARM' in lineIn:
-                errorStatus = True # cannot recover an alarm
-                break
-
-            if lineIn is not None and 'error' in lineIn:
-                if not showGrblErrorMessageBox(self, self.currentLine, self.gcode[self.currentLine], lineIn):
-                    errorStatus = True
-                    break
+            if self.errorStatus or (lineIn is not None and ('ALARM' in lineIn or 'error' in lineIn)):
+                time.sleep(0.01)
+                # this will be handled by the event
+                continue
 
             if not ack:
                 time.sleep(0.01)
