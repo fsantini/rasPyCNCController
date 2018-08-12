@@ -667,4 +667,3 @@ class GrblWriter(QObject):
 
     def cancelJog(self):
         self.serial.write('\x85')
-        self.wait_motion()

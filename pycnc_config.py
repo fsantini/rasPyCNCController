@@ -4,17 +4,17 @@ from PySide.QtCore import Qt
 
 SERIAL_PATTERN="/dev/ttyACM*"
 BAUD=115200
-SERIAL_DEBUG = True # define if serial communication should be shown
+SERIAL_DEBUG = False # define if serial communication should be shown
 CHECK_GCODE = True # define if every new GCode file should be run in check mode first
 
 # filelist
 # patterns for gcode files
 GCODE_PATTERN = ['.*\.nc', '.*\.ngc', '.*\.gc', '.*\.gcode']
-EXTRA_MOUNTPOINTS = [] # extra directories to show in the file list dialog
+EXTRA_MOUNTPOINTS = ['/media/gcode'] # extra directories to show in the file list dialog
 
 # GCode options
 # unsupported gcode to silently remove
-SUPPRESS_GCODE = []
+SUPPRESS_GCODE = ['M6', 'M06']
 
 # enabled joggers. If a jogger is not found, it is anyway disregarded. Should be safe leaving them on true
 JOG_KEYBOARD_ENABLED = True
@@ -25,16 +25,16 @@ JOG_SHUTTLE_ENABLED = True
 # standard feed rates used for jogging the machine
 STD_FEED=2000
 STD_FEED_Z=1000
-MIN_FEED = 2000
+MIN_FEED = 500
 MAX_FEED = 4000
-MIN_FEED_Z = 1000
+MIN_FEED_Z = 100
 MAX_FEED_Z = 1000
 
 # GCodeLoader
 G0_FEED = 5000 # feed rate for G0. Default value that should get overwritten by the config
 
 # JoyEventGenerator
-BTN_REPEAT = 200 # repeat time for buttons in ms
+BTN_REPEAT = 100 # repeat time for buttons in ms
 
 #JoyFileList
 # values for joystick buttons corresponding to actions in the filelist
@@ -76,9 +76,9 @@ JOY_XAXIS_MAP = {
 
 JOY_YAXIS_MAP = {
   'axes' : [ 1, 2, (0,1), (1,1) ],
-  'axesMult' : [ -50, -5, 1, 0.1 ],
+  'axesMult' : [ -50, -5, -1, -0.1 ],
   'hats' : [ (0,1) ],
-  'hatsMult' : [ 1 ],
+  'hatsMult' : [ -1 ],
   'btns' : [],
   'btnsMult': []
 }

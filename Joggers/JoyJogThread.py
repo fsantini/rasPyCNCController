@@ -23,6 +23,7 @@ import pycnc_config
 from AbstractJogger import AbstractJogger
 import math
 
+EVENT_MIN_INTERVAL = 20
 EVENT_INTERVAL = pycnc_config.BTN_REPEAT
 
 class JoyJogThread(JoyEvdev, AbstractJogger): # order is important. Like this, JoyEvdev overrides the start and stop methods from AbstractJogger
@@ -34,6 +35,7 @@ class JoyJogThread(JoyEvdev, AbstractJogger): # order is important. Like this, J
         self.eventTimer.timeout.connect(self.sendMoveEvent)
         self.movementConfig = [pycnc_config.JOY_XAXIS_MAP, pycnc_config.JOY_YAXIS_MAP, pycnc_config.JOY_ZAXIS_MAP]
         self.parent = None
+        self.lastEvent = 0
 
 
 
@@ -105,24 +107,35 @@ class JoyJogThread(JoyEvdev, AbstractJogger): # order is important. Like this, J
         # print cmd
 
     def processSYN(self):
-        #print "Syn received", self.accumulatedMove
+        print "Syn received", self.accumulatedMove
         if self.accumulatedMove is None:
             return
 
         # send the move event
         if all([move == 0 for move in self.accumulatedMove]):
-            self.relative_move_event.emit(self.accumulatedMove, 1000) # this is to stop a jog if Grbl1.1 is used
+            print "Stopping"
             self.accumulatedMove = None
             if self.eventTimer.isActive():
-                print "Stopping timer"
+                #print "Stopping timer"
                 self.eventTimer.stop()
+            if self.parent.grblWriter is not None:
+                self.parent.grblWriter.cancelJog() # using messages is sometimes not fast enough
+            self.relative_move_event.emit([0,0,0], 1000) # this is to stop a jog if Grbl1.1 is used
+            PySide.QtCore.QCoreApplication.processEvents()
             return
 
+        t = time.time()
+
+        if (t - self.lastEvent)*1000 < EVENT_MIN_INTERVAL:
+            return
+        
+        self.lastEvent = t
         # keep sending events to keep jogging while a button is pressed
-        if not self.eventTimer.isActive():
-            self.eventTimer.start(EVENT_INTERVAL)
+        if self.eventTimer.isActive():
+            self.eventTimer.stop()
 
         self.sendMoveEvent()  # send one event now
+        self.eventTimer.start(EVENT_INTERVAL)
 
     # attach this jogger to a particular widget. Use for example to install a keyboard filter
     def install(self, widget):

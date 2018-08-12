@@ -142,11 +142,14 @@ class JogHelper1_1(JogHelper):
         JogHelper.__init__(self)
 
     def relative_move(self, xyz, feed = None):
+        print "Relative move received"
         if self.grblWriter is None: return
 
         # this is a jog stop
         if all([pos == 0 for pos in xyz]):
+            print "Cancelling jog"
             self.grblWriter.cancelJog()
+            self.grblWriter.wait_motion()
             self.grblWriter.update_position()
             return
 
