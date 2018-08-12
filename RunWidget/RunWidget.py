@@ -21,27 +21,8 @@ from PySide.QtGui import *
 from runWidget_ui import Ui_runWidget
 from gcode.GCodeRunner import GCodeRunner
 import os.path
-from pyJoy.JoyEventGenerator import JoyEventGenerator
 import time
-
-class RunJoyEventGenerator(JoyEventGenerator):
-
-    event_stop = Signal()
-    event_pause = Signal()
-
-    def __init__(self):
-        JoyEventGenerator.__init__(self)
-
-    # redefine what happens with a hat event
-    def hatEvent(self, hEv):
-       pass
-
-    def btnEvent(self, bEv):
-        # mapped buttons are 9 - Stop, 10 - Pause
-        if bEv == 8:
-            self.event_stop.emit()
-        elif bEv == 9:
-            self.event_pause.emit()
+from pyJoy.JoyEvdev import JoyEvdevUIEventGenerator
 
 class RunWidget(Ui_runWidget, QWidget):
 
@@ -58,9 +39,9 @@ class RunWidget(Ui_runWidget, QWidget):
         self.totalTime = None
         self.runner = None
         self.file = ""
-        self.joy = RunJoyEventGenerator()
+        self.joy = JoyEvdevUIEventGenerator()
         self.PauseButton.clicked.connect(self.pause)
-        self.joy.event_pause.connect(self.pause)
+        self.joy.event_cancel.connect(self.pause)
         self.initElements()
         self.running = False
 
@@ -115,7 +96,7 @@ class RunWidget(Ui_runWidget, QWidget):
 
         self.PauseButton.setEnabled(True)
         self.StopButton.clicked.connect(self.resetGrbl)
-        self.joy.event_stop.connect(self.resetGrbl)
+        self.joy.event_ok.connect(self.resetGrbl)
 
         # forward the events
         self.runner.error_event.connect(lambda err: self.error_event.emit(err))
@@ -180,6 +161,7 @@ class RunWidget(Ui_runWidget, QWidget):
         self.setTime(self.totalTime - self.times[lineNo])
 
     def startJoy(self):
+        print "Run widget starting Joy"
         time.sleep(0.5)
         self.joy.start()
 

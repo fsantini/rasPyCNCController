@@ -4,7 +4,7 @@ from PySide.QtCore import Qt
 
 SERIAL_PATTERN="/dev/ttyACM*"
 BAUD=115200
-SERIAL_DEBUG = False # define if serial communication should be shown
+SERIAL_DEBUG = True # define if serial communication should be shown
 CHECK_GCODE = True # define if every new GCode file should be run in check mode first
 
 # filelist
@@ -66,8 +66,8 @@ KEY_HOME = [Qt.Key_5]
 # Mapping of joystick buttons and axes to movements.
 
 JOY_XAXIS_MAP = {
-  'axes' : [ 0, 3 ], # axis 0 and 3 move along x. 0 is left-right movement of left analog axis; 3 is right analog axis
-  'axesMult' : [ 50, 5 ], # left axis moves maximum of 50, right axis of 5
+  'axes' : [ 0, 3, (0,0), (1,0) ], # axis 0 and 3 move along x. 0 is left-right movement of left analog axis; 3 is right analog axis. Tuples correspond to evdev axis
+  'axesMult' : [ 50, 5, 1, 0.1 ], # left axis moves maximum of 50, right axis of 5
   'hats' : [ (0,0) ], # hat 0 (the only one) axis 0 (left-right) moves by 1 on x axis
   'hatsMult' : [ 1 ],
   'btns' : [], # no buttons are mapped to x movement
@@ -75,8 +75,8 @@ JOY_XAXIS_MAP = {
 }
 
 JOY_YAXIS_MAP = {
-  'axes' : [ 1, 2 ],
-  'axesMult' : [ -50, -5 ],
+  'axes' : [ 1, 2, (0,1), (1,1) ],
+  'axesMult' : [ -50, -5, 1, 0.1 ],
   'hats' : [ (0,1) ],
   'hatsMult' : [ 1 ],
   'btns' : [],
@@ -107,6 +107,16 @@ SHUTTLE_BUTTON_5 = 264
 
 SHUTTLE_WHEEL = 8
 SHUTTLE_DIAL = 7
+
+# evdev codes for joystick
+JOY_IDENTIFIER = 'Game Controller'
+JOY_BUTTONS = [288, 289, 290, 291, 292, 293, 294, 295, 296, 297]
+JOY_HATS = [[16,17]] # codes for each axis of each hat: [ [Hat0_X, Hat0_Y], [Hat1_X, Hat1_Y] ] etc...
+JOY_AXES = [[0,1], [5,2]] # codes for each axis of each "axes" (analog joy)
+
+
+
+
 
 # Probing
 ENABLE_PROBING = True

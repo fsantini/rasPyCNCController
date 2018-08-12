@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with rasPyCNCController.  If not, see <http://www.gnu.org/licenses/>.
 
-import pygame
+#import pygame
 import time
 from PySide.QtCore import QThread
 import pycnc_config

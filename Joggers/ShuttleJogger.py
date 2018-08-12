@@ -181,7 +181,7 @@ class ShuttleJogger(PySide.QtCore.QThread, AbstractJogger):
             if self.killMe:
                 return
 
-            if event.code == evdev.ecodes.SYN_REPORT:
+            if event.type == 0 and event.code == evdev.ecodes.SYN_REPORT:
                 self.process_events() # the block is closed
                 continue
             if event.code == self.WHEEL:

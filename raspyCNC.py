@@ -27,20 +27,9 @@ from RunWidget.RunWidget import RunWidget
 from pyFileList.JoyFileList import JoyFileList
 import sys
 from splash_ui import Ui_Splash
-import pygame
 import time
 import argparse
 from string_format import config_string_format
-
-def waitForJoy():
-    pygame.init()
-    pygame.joystick.init()
-    #print "Number of joysticks:", pygame.joystick.get_count()
-    while (pygame.joystick.get_count() == 0):
-        pygame.quit()
-        QApplication.processEvents()
-        pygame.init()
-        pygame.joystick.init()
 
 class SplashWidget(QWidget, Ui_Splash):
     def __init__(self, parent = None):
@@ -65,8 +54,6 @@ class MainWindow(QStackedWidget):
         # do not require joystick
         #self.splash.setText("Waiting for joystick...")
         #QApplication.processEvents()
-
-        #waitForJoy()
 
         self.splash.setText("Waiting for CNC...")
         QApplication.processEvents()

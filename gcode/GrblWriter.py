@@ -232,7 +232,12 @@ class GrblWriter(QObject):
             self.serial = serial.Serial(grbl_paths[0], pycnc_config.BAUD, timeout=5, dsrdtr=True)
             if pycnc_config.SERIAL_DEBUG:
                 redefineSerialRW(self.serial) # this is to debug communication!
-            self.serial.write("\r\n\x18")
+            self.serial.flushInput()
+            time.sleep(0.1)
+            self.serial.write("\r\n")
+            time.sleep(0.1)
+            self.serial.write("\x18")
+            time.sleep(0.1)
             grblLine = self.serial.readline()
             while 'Grbl' not in grblLine:
                 grblLine = self.serial.readline()
@@ -309,6 +314,10 @@ class GrblWriter(QObject):
 
     def reset(self):
         self.resetting = True
+        try:
+            self.serial.write("\x18")
+        except:
+            pass
         print "Resetting!"
         self.close()
         res = self.open()
@@ -327,6 +336,8 @@ class GrblWriter(QObject):
                 QApplication.processEvents()
             line = self.serial.readline().strip()
             #print "Received line:", line
+            if pycnc_config.SERIAL_DEBUG:
+                if line == "": self.serial.write("\n")
             if line.startswith("error:") or line.startswith("ALARM:"):
                 self.analyzer.undo()
                 self.grbl_error.emit(line)
@@ -357,6 +368,7 @@ class GrblWriter(QObject):
             for splitted_cmd in lastMoveCommand.splitMovement(self.zCompensation.spacing):
                 #print "Z compensation: splitted command ", splitted_cmd.getCommand()
                 #print "Z compensation: ",  self.zCompensation.getZValue(splitted_cmd.x, splitted_cmd.y)
+                #print "Z compensation: ",  self.zCompensation.getZValue(splitted_cmd.x, splitted_cmd.y)
                 splitted_cmd.z += self.zCompensation.getZValue(splitted_cmd.x, splitted_cmd.y)
                 #print "Z compensation:      new command ", splitted_cmd.getCommand()
                 self.serial.write(splitted_cmd.getCommand() + '\n')
@@ -382,7 +394,10 @@ class GrblWriter(QObject):
                 lastMoveCommand is not None): # z compensation only works in absolute coords
             response = self.do_compensated_move(lastMoveCommand)
         else: #business as usual
-            self.serial.write(command + '\n')
+            self.serial.write(command)
+            if pycnc_config.SERIAL_DEBUG:
+                time.sleep(0.1)
+            self.serial.write('\n')
             response = self.read_response(ignoreInitialize=initCommand)
         if wait:
             self.wait_motion()
@@ -644,3 +659,12 @@ class GrblWriter(QObject):
     def compensate_z(self, status = True):
         self.doZCompensation = status
 
+    def update_position(self):
+        pos = self.get_status()
+        if pos == None: return
+        self.analyzer.syncStatusWithGrbl(pos)
+        self.position_updated.emit(self.analyzer.getPosition())
+
+    def cancelJog(self):
+        self.serial.write('\x85')
+        self.wait_motion()

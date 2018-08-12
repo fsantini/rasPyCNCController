@@ -18,7 +18,8 @@
 
 from PySide.QtCore import *
 import sys
-
+import pycnc_config
+import math
 
 # run commands in a thread, so we can refuse or accept events while machine is busy
 class JogThread(QThread):
@@ -32,9 +33,10 @@ class JogThread(QThread):
         self.busy = False
 
     def run(self):
-        self.busy = True
         if self.cmd == "" or self.grblWriter is None:
             return
+
+        self.busy = True
 
         try:
             self.grblWriter.do_command(self.cmd, self.cncWait)
@@ -43,6 +45,8 @@ class JogThread(QThread):
             e = sys.exc_info()[0]
             self.error_event.emit(e)
 
+        self.grblWriter.update_position()
+
         self.cmd = ""
         self.busy = False
 
@@ -50,8 +54,6 @@ class JogThread(QThread):
         self.cmd = cmd
         self.cncWait = cncWait
         self.start()
-
-
 
 
 class JogHelper(QObject):
@@ -132,3 +134,28 @@ class JogHelper(QObject):
             cmd += " Z%.1f" % xyz[2]
 
         self.run_command(cmd)
+
+
+class JogHelper1_1(JogHelper):
+
+    def __init__(self):
+        JogHelper.__init__(self)
+
+    def relative_move(self, xyz, feed = None):
+        if self.grblWriter is None: return
+
+        # this is a jog stop
+        if all([pos == 0 for pos in xyz]):
+            self.grblWriter.cancelJog()
+            self.grblWriter.update_position()
+            return
+
+        travelDistance = pycnc_config.BTN_REPEAT * float(feed)/60/1000 # distance to travel in the space of a btn_repeat
+
+        plannedDistance = math.sqrt(xyz[0]**2 + xyz[1]**2 + xyz[2]**2)
+
+        factor = travelDistance/plannedDistance
+
+        cmd = "$J=G91 X%.1f Y%.1f Z%.1f F%d" % (xyz[0]*factor, xyz[1]*factor, xyz[2]*factor, feed)
+
+        self.run_command(cmd, False)

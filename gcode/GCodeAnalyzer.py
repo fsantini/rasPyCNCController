@@ -239,6 +239,8 @@ class GCodeAnalyzer():
             gcode = gcode[:gcode.find(";")]  # remove comments
         if gcode.find("(") >= 0:
             gcode = gcode[:gcode.find("(")]  # remove comments
+        if gcode.find("$") >= 0:
+            gcode = gcode[:gcode.find("$")]  # ignore configuration/jog commands
 
         tokens = ['']
         # convert multiple G commands on one line
@@ -490,12 +492,21 @@ class GCodeAnalyzer():
     def getWorkXYZ(self):
         return self.x, self.y, self.z
 
-    def syncStatusWithGrbl(self, grblMachineStatus, grblWorkStatus):
-        self.x, self.y, self.z = grblWorkStatus['position']
+    def syncStatusWithGrbl(self, grblMachineStatus, grblWorkStatus = None):
+        if grblWorkStatus is None:
+            # we only have one status report. Update the correct coordinates
+            if grblMachineStatus['type'] == 'Work':
+                self.x, self.y, self.z = grblWorkStatus['position']
+            else:
+                self.x = grblMachineStatus['position'][0] + self.xOffset
+                self.y = grblMachineStatus['position'][1] + self.yOffset
+                self.z = grblMachineStatus['position'][2] + self.zOffset
+        else:
+            self.x, self.y, self.z = grblWorkStatus['position']
 
-        self.xOffset = grblWorkStatus['position'][0] - grblMachineStatus['position'][0]
-        self.yOffset = grblWorkStatus['position'][1] - grblMachineStatus['position'][1]
-        self.zOffset = grblWorkStatus['position'][2] - grblMachineStatus['position'][2]
+            self.xOffset = grblWorkStatus['position'][0] - grblMachineStatus['position'][0]
+            self.yOffset = grblWorkStatus['position'][1] - grblMachineStatus['position'][1]
+            self.zOffset = grblWorkStatus['position'][2] - grblMachineStatus['position'][2]
 
 
     def getBoundingBox(self):

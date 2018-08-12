@@ -17,90 +17,116 @@
 # along with rasPyCNCController.  If not, see <http://www.gnu.org/licenses/>.
 
 import PySide.QtCore
-import pyJoy.JoyStatus
-import pygame.event
+from pyJoy.JoyEvdev import JoyEvdev
 import time
 import pycnc_config
 from AbstractJogger import AbstractJogger
 import math
 
+EVENT_INTERVAL = pycnc_config.BTN_REPEAT
 
-class JoyJogThread(PySide.QtCore.QThread, AbstractJogger):
+class JoyJogThread(JoyEvdev, AbstractJogger): # order is important. Like this, JoyEvdev overrides the start and stop methods from AbstractJogger
 
     def __init__(self):
-        PySide.QtCore.QThread.__init__(self)
-        #AbstractJogger.__init__(self)
-        self.killMe = False
-
-    def start(self):
-        self.killMe = False
-        time.sleep(0.1)
-        PySide.QtCore.QThread.start(self)
-        time.sleep(0.1)
-
-    def run(self):
-        self.joy = pyJoy.JoyStatus.JoyStatus()
-        if self.joy.joystick is None: return
-
-        myXYZ = [0,0,0]
+        JoyEvdev.__init__(self)
+        self.accumulatedMove = None
+        self.eventTimer = PySide.QtCore.QTimer(self)
+        self.eventTimer.timeout.connect(self.sendMoveEvent)
+        self.movementConfig = [pycnc_config.JOY_XAXIS_MAP, pycnc_config.JOY_YAXIS_MAP, pycnc_config.JOY_ZAXIS_MAP]
+        self.parent = None
 
 
-        while (not self.killMe):
-            time.sleep(0.1)
-            pygame.event.get()
-            xyz = self.joy.getXYZ()
-            if xyz != (0, 0, 0):
-                # go slower in Z moves
-                if xyz[2] != 0: # Z axis
-                    minFeed = pycnc_config.MIN_FEED_Z
-                    maxFeed = pycnc_config.MAX_FEED_Z
-                else:
-                    minFeed = pycnc_config.MIN_FEED
-                    maxFeed = pycnc_config.MAX_FEED
 
-                feed = minFeed + int(math.sqrt(xyz[0]**2 + xyz[1]**2 + xyz[2]**2)*(maxFeed-minFeed)/10)
-                #feed = int(math.sqrt(xyz[0]**2 + xyz[1]**2 + xyz[2]**2)*maxFeed)
-                if feed < minFeed: feed = minFeed
-                if feed > maxFeed: feed = maxFeed
-                # run command and wait for it to finish
+    def processButtonMovement(self, buttonNumber, value):
+        val = 1 if value == self.BUTTON_DOWN else 0
+        for movementAxis, config in enumerate(self.movementConfig):
+            if buttonNumber in config['btns']:
+                if self.accumulatedMove is None:
+                    self.accumulatedMove = [0,0,0]
+                self.accumulatedMove[movementAxis] = val * config['btnsMult'][config['btns'].index(buttonNumber)]
 
-                #cmd = "G01 X%.3f Y%.3f Z%.3f F%d" % (xyz[0], xyz[1], xyz[2], feed)
-                myXYZ[0] += xyz[0]
-                myXYZ[1] += xyz[1]
-                myXYZ[2] += xyz[2]
-                self.relative_move_event.emit(xyz, feed)
-                # print cmd
+    def processAxisMovement(self, axisCode, value):
+        for movementAxis, config in enumerate(self.movementConfig):
+            if axisCode in config['axes']:
+                if self.accumulatedMove is None:
+                    self.accumulatedMove = [0,0,0]
+                self.accumulatedMove[movementAxis] = config['axesMult'][config['axes'].index(axisCode)] * value
 
-            if self.joy.getButton(pycnc_config.BTN_ZERO):
-                #print "\rSetting zero                          "
-                myXYZ = [0, 0, 0]
-                self.home_update_event.emit(myXYZ)
+    def processHatMovement(self, hatCode, value):
+        for movementAxis, config in enumerate(self.movementConfig):
+            if hatCode in config['hats']:
+                if self.accumulatedMove is None:
+                    self.accumulatedMove = [0,0,0]
+                self.accumulatedMove[movementAxis] = config['hatsMult'][config['hats'].index(hatCode)] * value
 
-            if self.joy.getButton(pycnc_config.BTN_ZEROZ):
-                #print "\rSetting zero                          "
-                myXYZ[2] = 0
+    def processButton(self, code, value):
+        buttonNumber = pycnc_config.JOY_BUTTONS.index(code)
+
+        if value == self.BUTTON_DOWN:
+            if buttonNumber == pycnc_config.BTN_ZERO:
+                self.home_update_event.emit([0, 0, 0])
+            elif buttonNumber == pycnc_config.BTN_ZEROZ:
                 self.home_update_event.emit([None, None, 0])
-
-            if self.joy.getButton(pycnc_config.BTN_HOME):
-                myXYZ = [0, 0, 0]
-                #self.absolute_move_event.emit(myXYZ, None)
-                self.absolute_move_event.emit(myXYZ, -1) # None doen't work here for some reason
-
-            if self.joy.getButton(pycnc_config.BTN_OK):
+            elif buttonNumber == pycnc_config.BTN_HOME:
+                self.absolute_move_event.emit([0, 0, 0], -1)  # None doen't work here for some reason
+            elif buttonNumber == pycnc_config.BTN_OK:
                 # exit with true
                 self.exit_event.emit(True)
-                break
-
-            if self.joy.getButton(pycnc_config.BTN_CANCEL):
+                #self.stop() # ??
+            elif buttonNumber == pycnc_config.BTN_CANCEL:
                 self.exit_event.emit(False)
-                break
+                #self.stop() # ??
 
-    def stop(self):
-        self.killMe = True
-        time.sleep(0.1)
+        self.processButtonMovement(buttonNumber, value)
+
+    def processAxes(self, axesCode, value):
+        self.processAxisMovement(axesCode, value)
+
+    def processHat(self, hatCode, value):
+        self.processHatMovement(hatCode, value)
+
+    def sendMoveEvent(self):
+        xyz = self.accumulatedMove
+
+        # go slower in Z moves
+        if xyz[2] != 0:  # Z axis
+            minFeed = pycnc_config.MIN_FEED_Z
+            maxFeed = pycnc_config.MAX_FEED_Z
+        else:
+            minFeed = pycnc_config.MIN_FEED
+            maxFeed = pycnc_config.MAX_FEED
+
+        feed = minFeed + int(math.sqrt(xyz[0] ** 2 + xyz[1] ** 2 + xyz[2] ** 2) * (maxFeed - minFeed) / 10)
+        # feed = int(math.sqrt(xyz[0]**2 + xyz[1]**2 + xyz[2]**2)*maxFeed)
+        if feed < minFeed: feed = minFeed
+        if feed > maxFeed: feed = maxFeed
+
+        self.relative_move_event.emit(xyz, feed)
+        # print cmd
+
+    def processSYN(self):
+        #print "Syn received", self.accumulatedMove
+        if self.accumulatedMove is None:
+            return
+
+        # send the move event
+        if all([move == 0 for move in self.accumulatedMove]):
+            self.relative_move_event.emit(self.accumulatedMove, 1000) # this is to stop a jog if Grbl1.1 is used
+            self.accumulatedMove = None
+            if self.eventTimer.isActive():
+                print "Stopping timer"
+                self.eventTimer.stop()
+            return
+
+        # keep sending events to keep jogging while a button is pressed
+        if not self.eventTimer.isActive():
+            self.eventTimer.start(EVENT_INTERVAL)
+
+        self.sendMoveEvent()  # send one event now
 
     # attach this jogger to a particular widget. Use for example to install a keyboard filter
     def install(self, widget):
+        self.parent = widget
         pass
 
 if __name__=='__main__':

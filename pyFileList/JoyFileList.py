@@ -19,47 +19,12 @@
 import time
 
 from pyFileList.filelist import FileList
-from pyJoy.JoyEventGenerator import JoyEventGenerator
+#from pyJoy.JoyEventGenerator import JoyEventGenerator
+from pyJoy.JoyEvdev import JoyEvdevUIEventGenerator
 import sys
 import PySide.QtGui
 import PySide.QtCore
 import pycnc_config
-
-class JoyFileListEventGen(JoyEventGenerator):
-
-    event_right = PySide.QtCore.Signal()
-    event_left = PySide.QtCore.Signal()
-    event_up = PySide.QtCore.Signal()
-    event_down = PySide.QtCore.Signal()
-
-    event_select = PySide.QtCore.Signal()
-    event_ok = PySide.QtCore.Signal()
-    event_cancel = PySide.QtCore.Signal()
-
-    def __init__(self):
-        JoyEventGenerator.__init__(self)
-
-    # redefine what happens with a hat event
-    def hatEvent(self, hEv):
-        # hat events are: 0-Right 1-Left 2-Up 3-Down
-        if hEv == pycnc_config.HAT_RIGHT:
-            self.event_right.emit()
-        elif hEv == pycnc_config.HAT_LEFT:
-            self.event_left.emit()
-        elif hEv == pycnc_config.HAT_UP:
-            self.event_up.emit()
-        elif hEv == pycnc_config.HAT_DOWN:
-            self.event_down.emit()
-
-    def btnEvent(self, bEv):
-        # mapped buttons are 1 - select, 9 - Ok, 10 - Cancel
-        if bEv == pycnc_config.BTN_SELECT:
-            self.event_select.emit()
-        elif bEv == pycnc_config.BTN_OK:
-            self.event_ok.emit()
-        elif bEv == pycnc_config.BTN_CANCEL:
-            self.event_cancel.emit()
-
 
 
 
@@ -70,7 +35,7 @@ class JoyFileList(FileList):
 
     def __init__(self, parent=None):
         FileList.__init__(self,parent)
-        self.joyEventGen = JoyFileListEventGen()
+        self.joyEventGen = JoyEvdevUIEventGenerator()
 
         self.joyEventGen.event_ok.connect(self.okClicked)
         self.joyEventGen.event_cancel.connect(self.cancelClicked)
@@ -82,7 +47,7 @@ class JoyFileList(FileList):
 
         self.destroyed.connect(self.joyEventGen.stop)
 
-        self.joyEventGen.start()
+        #self.joyEventGen.start()
 
         self.currentView = 'FileView'
         self.lastSelPart = 0
@@ -141,6 +106,7 @@ class JoyFileList(FileList):
 
 
     def startJoy(self):
+        print "File widget starting Joy"
         self.joyEventGen.start()
 
     def stopJoy(self):
