@@ -28,7 +28,7 @@ from Joggers.JoyJogThread import JoyJogThread
 from Joggers.KeyboardJogger import KeyboardJogger
 from Joggers.ShuttleJogger import ShuttleJogger
 from gcode.GCodeLoader import GCodeLoader
-from gcode.JogHelper import JogHelper
+from gcode.JogHelper import JogHelper, JogHelper1_1
 from jogWidget_ui import Ui_joyWidget
 from gcode.GCodeRunner import truncateGCode
 from gcode.GrblWriter import showGrblErrorMessageBox
@@ -62,8 +62,8 @@ class JogWidget(Ui_joyWidget, QWidget):
             self.ZProbeButton.setVisible(False)
             self.GridProbeButton.setVisible(False)
 
-
         self.grblWriter = None
+        self.grblVersion = 0
         self.jogHelper = JogHelper()
 
         # propagate a GRBL error
@@ -151,7 +151,14 @@ class JogWidget(Ui_joyWidget, QWidget):
         self.grblWriter = grblWriter
         self.grblWriter.position_updated.connect(self.setPosition)
         self.setPosition(self.grblWriter.analyzer.getPosition())
-        self.jogHelper.setGrbl(grblWriter)
+        self.grblVersion = grblWriter.config['Major']
+
+        if self.grblVersion >= 1:
+            self.jogHelper = JogHelper1_1()
+            self.jogHelper.error_event.connect(lambda err: self.error_event.emit(err))
+
+        self.jogHelper.setGrbl(self.grblWriter)
+
 
     def fileLoaded(self):
         self.isFileLoaded = True
