@@ -8,17 +8,14 @@ A simple CNC (Grbl) gcode sender designed tob e used on a 480x320 touchscreen an
 Requirements
 ------------
 
-The program requires a computer and a monitor, preferably a Raspberry Pi 2 or better and a 480x320 touchscreen like [this one from Adafruit](https://www.adafruit.com/products/2097).
+The program requires a Linux computer and a monitor, preferably a Raspberry Pi 2 or better and a 480x320 touchscreen like [this one from Adafruit](https://www.adafruit.com/products/2097).
 
 Moreover, python 2.7 is required with the following additional modules:
 
  - psutil
- - PyGame
  - PySerial
  - PySide (and Qt libraries)
- - evdev (for shuttleXpress)
-
-For better performance, PyGame can be patched to avoid echoing the joystick commands, but this is not necessary. See https://bitbucket.org/pygame/pygame/pull-requests/6/fixed-joystick-debug-printouts/diff
+ - evdev
 
 Instructions
 ------------
